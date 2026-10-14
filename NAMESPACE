@@ -1,0 +1,37 @@
+# stratifyR 2.0 NAMESPACE
+
+# ---- Primary user-facing exports -------------------------------------------
+export(strata.data)
+export(strata.distr)
+export(compare_designs)
+export(stratifyRApp)
+
+# ---- S3 methods -- "strata" class ------------------------------------------
+S3method(print,   strata)
+S3method(summary, strata)
+S3method(plot,    strata)
+
+# ---- S3 methods -- "compare_designs" class ---------------------------------
+S3method(compare_designs, strata)
+S3method(print, compare_designs)
+
+# ---- Imports ----------------------------------------------------------------
+importFrom(stats,
+           AIC, BIC, approx, approxfun, density, ecdf,
+           integrate, median, IQR, quantile,
+           var, sd, setNames,
+           dnorm, dlnorm, dgamma, dexp, dweibull, dbeta, dunif, dcauchy,
+           pnorm, plnorm, pgamma, pexp, pweibull, pbeta, punif, pcauchy,
+           qnorm, qlnorm, qgamma, qexp, qweibull, qunif, qcauchy,
+           rnorm, rlnorm, rgamma, rexp, rweibull, runif,
+           optimize)
+importFrom(graphics,
+           abline, axis, barplot, hist, legend, lines, mtext,
+           par, plot, plot.new, plot.window, polygon, rect, text, title)
+importFrom(grDevices, adjustcolor, colorRampPalette, rgb, dev.size)
+importFrom(utils,    head, tail)
+importFrom(MASS,     fitdistr)
+importFrom(fitdistrplus, fitdist)
+importFrom(nloptr,   nloptr)
+importFrom(actuar,   dpareto, ppareto)
+importFrom(mc2d,     dtriang, ptriang)

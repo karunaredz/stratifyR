@@ -1,0 +1,9 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^.*\.DS_Store$
+^\.Rhistory$
+^.*\.bak$
+^NEWS\.html$
+^.*\.tar\.gz$
+^.*\.Rcheck$
+^cran-comments\.md$
