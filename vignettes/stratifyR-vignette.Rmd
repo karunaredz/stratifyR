@@ -425,7 +425,7 @@ The solver is run from several starting points (argument `n_starts`, default 20)
 - For `strata.distr()`, COBYLA minimises the same analytical objective as the DP, but over continuous boundaries rather than a grid.
 - For `strata.data()`, COBYLA minimises the empirical objective $\sum_h W_h S_h$ computed from the data. This is exactly the quantity reported as `WhShTot`.
 
-**Advantages:** fast (usually well under a second, and over 100 times faster than DP at $h = 6$); in our tests on ten distributions it found the exact optimum in most settings and was within 1% of it in 49 of 50.
+**Advantages:** fast, usually about a second even for six strata, so it is well suited to trying many values of $h$ or many variables. On data it usually lands on the same partition as `method = "exact"`, and you can check this in any particular case by running both.
 
 **Limitations:** it is a local method, so a global optimum is not guaranteed. The `summary()` output reports a Cauchy-Schwarz optimality gap, KKT residuals and a convergence flag to help judge the solution.
 
@@ -437,26 +437,27 @@ The solver is run from several starting points (argument `n_starts`, default 20)
 
 **Advantages:** deterministic and reproducible; on smooth problems and moderate $h$ it usually reaches the same solution as COBYLA.
 
-**Limitations:** on very wide ranges the evaluation budget may not resolve the narrow strata near the bottom of a skewed distribution. In our tests this happened for the log-normal at $h = 5$ and $6$ and for the Cauchy at $h = 4$. Multi-start COBYLA is the recommended fast solver.
+**Limitations:** when the data cover a very wide range, the fixed evaluation budget may not be enough to find narrow strata near the bottom of a skewed distribution, especially for larger $h$. If GLOBAL and COBYLA disagree, trust the lower `WhShTot`, or check with `method = "exact"`.
 
 ## The EXACT Method (`method = "exact"`)
 
-For a finite population, a boundary can only change the design when it moves past a data value. So the optimal stratification of the data is a partition of the sorted values into $h$ consecutive groups. `method = "exact"` finds the best such partition by dynamic programming over the sorted data, using the same Bellman recursion as Section 4. Running sums make the cost of each candidate stratum a constant-time calculation, so the whole search takes $O(h\,m^2)$ operations for $m$ distinct values. Every stratum must hold at least two units, and tied values are never split.
+When you have every value of the stratification variable, sorting them shows that a set of strata is just a way of cutting the sorted list into $h$ consecutive pieces. `method = "exact"` tries every such cut, using the dynamic programming idea of Section 4 so that this stays fast, and returns the cut with the smallest `WhShTot`. In other words, no other choice of boundaries for these data can give a smaller Neyman cost. Each stratum keeps at least two units, and units with the same value are always kept together.
 
-The result is the smallest possible empirical Neyman cost for the population. It is exact for up to 20,000 distinct values, which takes from well under a second to about 20 seconds. Above that, the search uses 20,000 cut points spread evenly in rank; this limit can be changed with `options(stratifyR.exact_max_cand = )`, and the returned object records which case applied in `exact_full`.
+In practice:
 
-The EXACT solver is the natural benchmark for the other three. It is available in `strata.data()` only; for an assumed distribution, the DP is already exact on its grid.
+- It needs the data, so it is available in `strata.data()` only. With `strata.distr()` there is nothing to sort, and the DP is already optimal for the assumed distribution.
+- It is quick for typical survey frames: a few thousand units take a second or two, and around 14,000 units with $h = 6$ take well under half a minute.
+- For very large frames (more than 20,000 distinct values) it searches 20,000 cut points spread evenly through the sorted data, which is close to exact. You can raise the limit, at the cost of time and memory, with `options(stratifyR.exact_max_cand = 50000)`. The element `exact_full` of the result tells you whether every cut point was searched.
+- The boundary it reports is the largest value in each stratum, so a unit equal to a boundary belongs to the lower stratum.
 
-## Summary: When to Use Each Method
+## Which method should I use?
 
-| Situation | Recommended solver |
-|---|---|
-| Data available, best possible design for this population | `"exact"` |
-| Data available, many runs or large $h$ (fast) | `"cobyla"` |
-| Data available, boundaries that follow a smooth fitted model | `"dp"` (default) |
-| No data, assumed distribution (`strata.distr()`) | `"dp"`, or `"cobyla"` for speed |
+A few questions settle it:
 
-The DP and EXACT solvers answer slightly different questions. EXACT gives the best boundaries for the population in hand. DP gives the best boundaries for the fitted model, which can be useful when the frame will be reused for later surveys and a smooth model is preferred to the details of one dataset. When the fitted family describes the data well, the two are very close.
+- *Do you have the data, or only an assumed distribution?* With only a distribution, use `strata.distr()` with the default `"dp"`, or `"cobyla"` if you want results instantly.
+- *Is the design for this very frame?* Then `"exact"` gives the best boundaries for it, usually in seconds.
+- *Will the boundaries be reused, for example in later rounds of the survey or on an updated frame?* The default `"dp"` places the boundaries for the fitted distribution rather than for every detail of one dataset, so they tend to change less from one frame to the next. It is worth comparing its `WhShTot` with `"exact"`: a small difference means the fitted family describes your data well.
+- *Are you exploring, for example many values of $h$ or several variables?* Use `"cobyla"` for speed, then confirm the final choice with `"exact"` or `"dp"`.
 
 ## Application: Comparing Methods for `strata.distr`
 
@@ -515,6 +516,103 @@ cat("EXACT  OSB:", round(res_exact_s$OSB, 3), "  WhShTot:", res_exact_s$WhShTot,
 ```
 
 COBYLA, GLOBAL and EXACT reach the same minimum cost. Their printed boundaries can differ slightly, because any boundary that lies between the same two consecutive data values gives the same strata; EXACT reports the largest value in the lower stratum. The DP cost is slightly higher, because the DP optimises the fitted Weibull model rather than the data. The difference here is small (about 0.25%), which shows that the Weibull describes these data well.
+
+# Working with the Results
+
+This section walks through the tools that help you turn a set of boundaries into a survey design: reading the output, choosing the number of strata, comparing the design with simpler ones, allowing for different costs per stratum, and plotting. The examples use household expenditure from the `hies` data ($N = 3{,}566$ households) with a sample of $n = 400$.
+
+```{r include=TRUE}
+data(hies)
+expend <- hies$Expenditure
+summary(expend)
+```
+
+## What is in a result
+
+Every call to `strata.data()` or `strata.distr()` returns an object of class `"strata"`. Printing it gives a short overview, and `summary()` gives the full table. The pieces you will use most often are:
+
+| Element | Meaning |
+|---|---|
+| `OSB` | the optimum strata boundaries; the last one is the top of the range |
+| `Nh`, `nh` | the number of population units and of sampled units in each stratum |
+| `Wh`, `Vh` | stratum weights and variances |
+| `WhShTot` | the Neyman cost $\sum_h W_h S_h$; smaller means a more precise design |
+| `method`, `distr` | the solver used and the fitted (or assumed) distribution |
+| `converged`, `optimality_gap`, `kkt_residuals` | checks on the solution, mainly for `"cobyla"` and `"global"` |
+
+```{r include=TRUE}
+res <- strata.data(expend, h = 4, n = 400, method = "exact")
+res
+res$OSB
+res$nh
+sum(res$nh)    # the stratum sample sizes always add up to n
+```
+
+A unit whose value equals a boundary belongs to the stratum below it. The sample sizes are whole numbers that add up to $n$ and never exceed the number of units in a stratum. If Neyman allocation asks for more units than a stratum has, that stratum is fully enumerated and the rest of the sample is shared among the other strata.
+
+## How many strata?
+
+Each extra stratum lowers the Neyman cost, but by less each time, and every stratum adds fieldwork and reporting effort. A quick way to choose $h$ is to compute `WhShTot` for a range of values with the fast solver and look for the point where the gains level off.
+
+```{r include=TRUE, fig.width=5, fig.height=3.5}
+h_values <- 2:7
+cost_h <- sapply(h_values, function(h)
+  strata.data(expend, h = h, n = 400, method = "cobyla")$WhShTot)
+round(cost_h, 1)
+round(100 * (1 - cost_h[-1] / cost_h[-length(cost_h)]), 1)   # % drop at each step
+plot(h_values, cost_h, type = "b", pch = 19,
+     xlab = "Number of strata (h)", ylab = "WhShTot",
+     main = "Neyman cost by number of strata")
+```
+
+For these data the cost falls by about 31% from two to three strata and by about 24% from three to four, after which each extra stratum gains less. Four strata is a sensible choice here. The **Strata count** tab of the app does the same calculation and marks the elbow for you.
+
+## Comparing with simpler designs
+
+`compare_designs()` takes a result and compares, for the same sample size, the variance of the estimated mean under simple random sampling (SRS), stratified sampling with proportional allocation, and stratified sampling with Neyman allocation.
+
+```{r include=TRUE}
+compare_designs(res)
+```
+
+The design effect (DEFF) is the variance relative to SRS. The *equivalent SRS sample size* is how many households a simple random sample would need to match the precision of the stratified design; the difference is the saving that stratification buys.
+
+## Different costs per stratum
+
+If some strata are more expensive to survey, for example because large households take longer to interview, give the cost per sampled unit in each stratum with `cost = TRUE` and `ch`. The solvers then minimise $\sum_h W_h S_h \sqrt{c_h}$, so both the boundaries and the allocation change: cheaper strata receive more of the sample.
+
+```{r include=TRUE}
+ch <- c(1, 1, 2, 4)    # relative cost of one interview in each stratum
+res_cost <- strata.data(expend, h = 4, n = 400, method = "exact",
+                        cost = TRUE, ch = ch)
+rbind(equal_costs = res$nh, with_costs = res_cost$nh)
+c(equal_costs = sum(res$nh * ch), with_costs = sum(res_cost$nh * ch))   # field cost
+```
+
+With the same 400 interviews, the cost-aware design moves the sample towards the cheaper lower strata and needs noticeably less field effort. Its variance is a little higher than the Neyman design's, because Neyman allocation is the most precise choice for a fixed $n$; the cost-aware design is the better choice when the budget, rather than the sample size, is fixed.
+
+## Plots
+
+`plot()` shows the population with the boundaries marked. The default `type = "2d"` is a histogram with the fitted density overlaid. With the **plotly** package installed, `type = "3d"` and `type = "interactive"` give interactive views that you can rotate and explore in the RStudio viewer or a browser.
+
+```{r include=TRUE, fig.width=6, fig.height=4}
+plot(res, data = expend)
+```
+
+```{r eval=FALSE}
+plot(res, type = "3d")            # needs plotly
+plot(res, type = "interactive")   # needs plotly
+```
+
+## Large frames and the exact solver
+
+For frames with more than 20,000 distinct values, `method = "exact"` searches a large, evenly spread set of cut points, and `res$exact_full` is `FALSE`. If you need the full search, raise the limit before the call, keeping in mind that time and memory grow quickly with it:
+
+```{r eval=FALSE}
+options(stratifyR.exact_max_cand = 50000)
+res_big <- strata.data(big_frame, h = 5, n = 2000, method = "exact")
+res_big$exact_full
+```
 
 # Application to Numerous Survey Populations
 
@@ -697,7 +795,7 @@ f(y) =
 
 where $a$ is the location parameter and $b$ is the scale parameter of the distribution.  
 
-Note that the Right-Triangular distribution is a special case of the Triangular distribution discussed in Section 8.2 where the parameters $a=c$, i.e., minimium value is equal to the mode. Thus, the density function (22) is a two-parameter distribution.
+Note that the Right-Triangular distribution is a special case of the Triangular distribution discussed in Section 9.2 where the parameters $a=c$, i.e., minimium value is equal to the mode. Thus, the density function (22) is a two-parameter distribution.
 
 ### DP Solution for Right-Triangular Distribution
 
@@ -1226,7 +1324,7 @@ res <- strata.data(black, h = 2, n=500)
 summary(res)
 ```
 
-Please note that for Cauchy distributions, one might get the error messages "simpleError in optim()...". You can ignore this error message which simply indicates that when the data is fitted to all ten distributions, it gives errors while computing the parameters of those distributions which are not defined in the negative region. This happens with Cauchy distribution because it is defined on both positive and negative regions.
+When the data include negative values, as they can for a Cauchy variable, the families that are defined only for positive values cannot be fitted. The package skips them quietly and chooses among the remaining families by AIC.
 
 Similarly, in order to find the OSB and other quantities, we can apply the **strata.distr()** function to a Cauchy population. Based on the assumption from past knowledge that the population follows Cauchy distribution with the given attributes such as the initial value, distance, parameters, etc., we can execute the following command to obtain the results:
 
@@ -1240,7 +1338,7 @@ summary(res)
 
 # Summary of Method Comparison Across All Supported Distributions
 
-To compare the four solvers on the examples of Section 8, we ran `strata.data()` with $h = 3$ on the data used in each distribution section. Table 1 shows the Neyman cost $\sum W_h S_h$ (`WhShTot`) for each solver, and the gap of the DP cost above the exact optimum. The values were computed with **stratifyR** 2.0-2; the code to reproduce them is given after the table.
+To compare the four solvers on the examples of Section 9, we ran `strata.data()` with $h = 3$ on the data used in each distribution section. Table 1 shows the Neyman cost $\sum W_h S_h$ (`WhShTot`) for each solver, and the gap of the DP cost above the exact optimum. The values were computed with **stratifyR** 2.0-2; the code to reproduce them is given after the table.
 
 ```{r echo=FALSE, message=FALSE}
 comparison_table <- data.frame(
@@ -1260,7 +1358,7 @@ comparison_table <- data.frame(
   check.names = FALSE
 )
 knitr::kable(comparison_table, align = "llrlrrrrr",
-             caption = "Table 1: Neyman cost (WhShTot) of the four solvers with h = 3 on the examples of Section 8. 'AIC family' is the distribution chosen by AIC, which the DP optimises. 'DP gap' is the DP cost above the exact optimum. Lower WhShTot means a more efficient design.")
+             caption = "Table 1: Neyman cost (WhShTot) of the four solvers with h = 3 on the examples of Section 9. 'AIC family' is the distribution chosen by AIC, which the DP optimises. 'DP gap' is the DP cost above the exact optimum. Lower WhShTot means a more efficient design.")
 ```
 
 Three points stand out.
@@ -1271,7 +1369,7 @@ Three points stand out.
 
 3. **The DP depends on the fitted model.** For the Boston `black` variable, the AIC chooses the Cauchy, but the data are strongly skewed to the left and the fitted Cauchy describes them poorly. The DP boundaries, which are optimal for that model, cost 38.5% more than the exact optimum for the actual data. Fitting a distribution is what makes `strata.distr()` possible when no data are available, but when the data are at hand, it is worth checking the DP result against `method = "exact"`.
 
-Note that the family chosen by AIC can differ from the section name. For example, the Iron and Folate data (with the minimum replaced as in Section 8) are fitted best by the normal. The family chosen, and therefore the DP result, can also differ slightly between platforms when a maximum-likelihood fit is close to failing. The COBYLA, GLOBAL and EXACT results do not depend on the fit.
+Note that the family chosen by AIC can differ from the section name. For example, the Iron and Folate data (with the minimum replaced as in Section 9) are fitted best by the normal. The family chosen, and therefore the DP result, can also differ slightly between platforms when a maximum-likelihood fit is close to failing. The COBYLA, GLOBAL and EXACT results do not depend on the fit.
 
 In summary, **`"exact"` gives the best design for a given population, `"cobyla"` gives the same answer in almost all cases and is the fastest, and `"dp"` remains the default** because it optimises a smooth fitted model and is the method of the original package.
 

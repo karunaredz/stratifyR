@@ -1,11 +1,16 @@
 ## Resubmission
 
-This is a resubmission of 2.0-2, sent before the first submission was
-processed. It fixes one platform-specific rounding issue found after the first
-submission: with method = "exact", a stratum boundary rebuilt as
-(b / maxval) * maxval could round one bit low on Apple silicon and move one unit
-into the next stratum. The allocation step now uses a cut point halfway between
-data values. A unit test covering this case has been added.
+This is a resubmission of 2.0-2. In this version I have:
+
+* Fixed the invalid URLs: the GitHub repository given in URL and BugReports
+  (https://github.com/karunaredz/stratifyR) is now public.
+* Fixed a platform-specific rounding issue found after the first submission:
+  with method = "exact", a stratum boundary rebuilt as (b / maxval) * maxval
+  could round one bit low on Apple silicon and move one unit into the next
+  stratum. The allocation step now uses a cut point halfway between data
+  values, and a unit test covers this case.
+* Distribution fitting no longer prints optimiser messages to the console, and
+  the vignette has a new section on working with the results.
 
 ## Submission
 

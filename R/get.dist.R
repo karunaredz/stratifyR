@@ -31,7 +31,13 @@ get.dist <- function(data, my_env) {
    # Helper: run a fit safely; capture AIC/estimates or a message
    try_fit <- function(fitter) {
       out <- list(ok = FALSE, aic = NA_real_, estimate = NULL, msg = NULL)
-      res <- try(fitter(), silent = TRUE)
+      # fitdistrplus prints optimiser errors and warns about default
+      # parameters when a family does not fit; those families are simply
+      # skipped here, so keep their messages out of the user's console.
+      res <- try({
+         utils::capture.output(fit_res <- suppressWarnings(fitter()))
+         fit_res
+      }, silent = TRUE)
       if (inherits(res, "try-error")) {
          out$msg <- as.character(res)
          return(out)

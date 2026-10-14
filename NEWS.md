@@ -74,13 +74,19 @@
 * Section 7 is rewritten for the four solvers (DP, COBYLA, GLOBAL and EXACT),
   with a guide to choosing one and worked examples that include
   `method = "exact"`.
-* The method comparison table (Section 9) is recomputed with 2.0-2 and now
+* New Section 8, "Working with the Results": reading the output, choosing the
+  number of strata, `compare_designs()`, cost-aware allocation, plots and
+  large frames, with a worked example on household expenditure.
+* The method comparison table (now Section 10) is recomputed with 2.0-2 and
   shows each solver's cost against the exact optimum.
 * Removed a development-only block that sourced the R files from the source
   tree, and updated the package details at the top.
 
 ## Other
 
+* Distribution fitting no longer prints optimiser errors and warnings to the
+  console for families that fail to fit; those families are skipped quietly,
+  as before.
 * Added ORCID for the maintainer, and URL and BugReports fields.
 * `DESCRIPTION` now describes the four solvers correctly (GLOBAL refines with
   BOBYQA, not COBYLA).
