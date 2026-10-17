@@ -239,51 +239,14 @@ distr.root <- function(d, y, c, my_env)
   ##  min/max/mode divide by maxval on the scaled axis.
   ##  (Guard against a==0 with a tiny epsilon when needed.)
   ## ===========================================================================
-  if (distr == "triangle") {
-    a <- my_env$obj[["params"]]["min"]  / maxval
-    b <- my_env$obj[["params"]]["max"]  / maxval
-    m <- my_env$obj[["params"]]["mode"] / maxval
-    
-    # If max and mode coincide, this is a right-triangular case.
-    if (round(b, 1) == round(m, 1)) {
-      stop("The distribution appears to be right-triangular")
-    }
-    
-    if (initval == 0) initval <- initval + 1e-10
-    
-    xh  <- d + initval
-    xh1 <- d - y + initval
-    
-    # Left piece (up-slope, up to the mode m)
-    wh1    <- (y * (y + 2 * (xh1 - a))) / ((b - a) * (m - a))
-    muh1   <- ((2/3) * y^2 + 2*y*xh1 - a*y + 2*(xh1 - a)*xh1) / (y + 2*(xh1 - a))
-    sig2h1 <- (y^2 * (y^2 + 6*y*(xh1 - a) + 6*(xh1 - a)^2)) / (18 * (y + 2*(xh1 - a))^2)
-    
-    # Right piece (down-slope, after the mode m)
-    wh2    <- (y * (2*(b - xh1) - y)) / ((b - a) * (b - m))
-    muh2   <- (3*(b - xh1)*y - 3*y*xh1 + 6*(b - xh1)*xh1 - 2*y^2) / (3 * (2*(b - xh1) - y))
-    sig2h2 <- (y^2 * (6*(b - xh1)^2 - 6*y*(b - xh1) + y^2)) / (18 * (2*(b - xh1) - y)^2)
-    
-    calc <- if (d <= m) (wh1^2) * sig2h1 * cost else (wh2^2) * sig2h2 * cost
-  }
-  
-  ## ===========================================================================
-  ## Right-triangle branch (scaled)
-  ## ===========================================================================
-  if (distr == "rtriangle") {
+  if (distr == "triangle" || distr == "rtriangle") {
     a <- my_env$obj[["params"]]["min"] / maxval
     b <- my_env$obj[["params"]]["max"] / maxval
-    
-    if (initval == 0) initval <- initval + 1e-10
-    
-    xh  <- d + initval
+    m <- if (distr == "rtriangle") a else my_env$obj[["params"]]["mode"] / maxval
     xh1 <- d - y + initval
-    
-    wh    <- (y * (2*(b - xh1) - y)) / ((b - a)^2)
-    muh   <- (3*b*(y + 2*xh1) - 2*(y^2 + 3*y*xh1) + 3*xh1^2) / (3 * (2*(b - xh1) - y))
-    sig2h <- (y^2 * (y^2 - 6*(b - xh1)*y + 6*(b - xh1)^2)) / (18 * (2*(b - xh1) - y)^2)
-    
-    calc <- (wh^2) * sig2h * cost
+    # v2.0-3: exact moments over the stratum, splitting at the mode when the
+    # stratum contains it (the old formula used one side of the triangle only)
+    calc <- .triang_w2s2(xh1, xh1 + y, a, b, m) * cost
   }
   
   ## ===========================================================================
@@ -297,18 +260,9 @@ distr.root <- function(d, y, c, my_env)
     xh  <- d + initval
     xh1 <- d - y + initval
     
-    Wh <- (s / (xh1 + s))^a - (s / (y + xh1 + s))^a
-    A  <- ( (y + xh1 + s)^(2 - a) ) / (2 - a)
-    B  <- ( 2 * s * (y + xh1 + s)^(1 - a) ) / (1 - a)
-    C0 <- ( (s^2) * (y + xh1 + s)^(-a) ) / a
-    D  <- ( (xh1 + s)^(2 - a) ) / (2 - a)
-    E  <- ( 2 * s * (xh1 + s)^(1 - a) ) / (1 - a)
-    G  <- ( (s^2) * (xh1 + s)^(-a) ) / a
-    H  <- (a * (y + xh1) + s) / ((y + xh1 + s)^a)
-    I  <- (a * xh1 + s) / ((xh1 + s)^a)
-    
-    calc <- ((a * s^a) * Wh * (A - B - C0 - D + E + G) -
-               ((s^(2*a)) / (1 - a)^2) * (H - I)^2) * cost
+    # v2.0-3: numerically stable form, valid for every shape > 0
+    # (the old closed form divided by (2 - a) and (1 - a)).
+    calc <- .pareto_w2s2(xh1, y, a, s) * cost
   }
   
   ## ---------------------------------------------------------------------------

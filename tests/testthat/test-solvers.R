@@ -77,3 +77,50 @@ test_that("exact: reported cost matches its own boundaries on heavy-tailed data"
     expect_gte(cb$WhShTot, r$WhShTot - 1e-6)
   }
 })
+
+test_that("cobyla copes with an infinite-variance (very wide range) sample", {
+  set.seed(6)
+  x <- actuar::rpareto(3000, shape = 2, scale = 1)     # range in the hundreds
+  ex <- suppressWarnings(suppressMessages(strata.data(x, h = 4, n = 300, method = "exact")))
+  cb <- suppressWarnings(suppressMessages(strata.data(x, h = 4, n = 300, method = "cobyla")))
+  expect_lt((cb$WhShTot - ex$WhShTot) / ex$WhShTot, 0.02)
+})
+
+test_that("GLOBAL and COBYLA report the cost of the partition they found (tied data)", {
+  data(math, package = "stratifyR")
+  x <- math$final_marks
+  ex <- suppressMessages(strata.data(x, h = 3, n = 243, method = "exact"))$WhShTot
+  gl <- suppressMessages(strata.data(x, h = 3, n = 243, method = "global"))$WhShTot
+  cb <- suppressMessages(strata.data(x, h = 3, n = 243, method = "cobyla"))$WhShTot
+  expect_lt(gl / ex - 1, 1e-8)
+  expect_lt(cb / ex - 1, 1e-8)
+})
+
+test_that("strata.distr() stops when the range lies outside a bounded support", {
+  expect_error(strata.distr(h = 2, initval = 1, dist = 0.9, distr = "rtriangle",
+                            params = c(min = 2, max = 10, mode = 2), n = 50, N = 100),
+               "outside the support")
+})
+
+test_that("COBYLA and GLOBAL keep the extreme units in the outer strata (two-sided heavy tails)", {
+  set.seed(1)
+  x <- rcauchy(5000, location = 5, scale = 1)
+  for (h in c(3, 6)) {
+    ex <- suppressMessages(strata.data(x, h = h, n = 500, method = "exact"))$WhShTot
+    cb <- suppressMessages(strata.data(x, h = h, n = 500, method = "cobyla"))$WhShTot
+    expect_lt(cb / ex - 1, 1e-3)
+  }
+})
+
+test_that("the Pareto likelihood stays accurate at extreme parameter values", {
+  set.seed(3); x <- runif(5000, 0, 10)
+  r <- suppressMessages(strata.data(x, h = 2, n = 500, method = "exact"))
+  expect_equal(r$distr, "unif")
+})
+
+test_that("strata.distr() stratum sizes add up to N", {
+  g <- suppressMessages(strata.distr(h = 4, initval = 500, dist = 119500, distr = "lnorm",
+         params = c(meanlog = 9.616, sdlog = 0.703), n = 1000, N = 20000))
+  expect_equal(sum(g$Nh), 20000)
+  expect_equal(sum(g$nh), 1000)
+})

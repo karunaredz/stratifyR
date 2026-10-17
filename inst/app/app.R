@@ -4,7 +4,7 @@
 #
 # Required packages:
 #   install.packages(c("shiny", "bslib", "DT", "plotly", "readxl"))
-#   install.packages("~/Desktop/strataVerse/stratifyR 2.0/stratifyR 2.0-2",
+#   install.packages("~/Desktop/strataVerse/stratifyR 2.0/stratifyR 2.0-3",
 #                    repos = NULL, type = "source")
 # ==============================================================================
 
@@ -16,8 +16,8 @@ library(stratifyR)
 # Version shown in the header badge, read from the installed package
 # (e.g. "2.0-2"), so it always matches the package that is running.
 .app_version <- tryCatch(utils::packageDescription("stratifyR")$Version,
-                         error = function(e) "2.0-2")
-if (is.null(.app_version) || is.na(.app_version)) .app_version <- "2.0-2"
+                         error = function(e) "2.0-3")
+if (is.null(.app_version) || is.na(.app_version)) .app_version <- "2.0-3"
 
 has_plotly  <- requireNamespace("plotly",  quietly = TRUE)
 has_readxl  <- requireNamespace("readxl",  quietly = TRUE)

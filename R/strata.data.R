@@ -184,11 +184,13 @@ strata.data <- function(data,
   distr  <- as.character(my_env$obj["distr"])
 
   # Handle triangle vs rtriangle
-  trng_max  <- tryCatch(my_env$obj[["params"]]["max"],  error = function(e) NA)
+  # (right-triangular means the mode is at the minimum; v2.0-2 compared the
+  # mode with the maximum by mistake)
+  trng_min  <- tryCatch(my_env$obj[["params"]]["min"],  error = function(e) NA)
   trng_mode <- tryCatch(my_env$obj[["params"]]["mode"], error = function(e) NA)
   if (identical(distr, "triangle") &&
-      !is.na(trng_max) && !is.na(trng_mode) &&
-      round(trng_max, 1) == round(trng_mode, 1)) {
+      !is.na(trng_min) && !is.na(trng_mode) &&
+      round(trng_min, 1) == round(trng_mode, 1)) {
     distr <- "rtriangle"
   }
 
@@ -273,6 +275,7 @@ strata.data <- function(data,
   }
 
   # Boundaries in real scale
+  res$b_dist <- .snap_data_bdist(res$b_dist, my_env)
   OSB <- .cobyla_real_osb(res$b_dist, my_env)
 
   # Store OSB in my_env for data.alloc
@@ -313,6 +316,7 @@ strata.data <- function(data,
     return(.solve_dp_data(h, n, N, my_env))
   }
 
+  res$b_dist <- .snap_data_bdist(res$b_dist, my_env)
   OSB <- .cobyla_real_osb(res$b_dist, my_env)
   .store_osb_env(OSB, my_env, h)
 
@@ -354,13 +358,14 @@ strata.data <- function(data,
       x[i] <- y[i] + my_env$initval
     } else {
       d[i] <- d[i + 1L] - y[i + 1L]
-      temp <- as.integer(d[i] * points)
+      temp <- min(max(as.integer(round(d[i] * points)), 0L), ncol(my_env$dk2) - 1L)   # v2.0-3: round, not truncate
       y[i] <- my_env$dk2[i + 1L, temp + 1L]
       x[i] <- x[i + 1L] - y[i + 1L]
     }
   }
 
-  for (i in h:1) my_env$ylimits[i + 1L] <- as.integer(y[i] * points * z)
+  d1 <- d; y1 <- y; x1 <- x   # first (coarse) pass, kept as a fallback
+  for (i in h:1) my_env$ylimits[i + 1L] <- as.integer(round(y[i] * points * z))
 
   my_env$ObjFV <- data.optim(k = h, n = e - 1L, incf = inc2,
                               minYk = my_env$ylimits[h + 1L] - my_env$factor * my_env$z,
@@ -378,17 +383,34 @@ strata.data <- function(data,
       x[i] <- y[i] + my_env$initval
     } else {
       d[i] <- d[i + 1L] - y[i + 1L]
-      temp <- as.integer(d[i] * points * z)
+      temp <- min(max(as.integer(round(d[i] * points * z)), 0L), ncol(my_env$dk2) - 1L)   # v2.0-3: round, not truncate
       y[i] <- my_env$dk2[i + 1L, temp + 1L]
       x[i] <- x[i + 1L] - y[i + 1L]
     }
   }
 
+  # v2.0-3: the fine pass only fills a window of the table around the coarse
+  # answer. If its answer moves to the edge of that window, the earlier
+  # stages can look up cells that were never filled (NA). Then keep the
+  # coarse answer; the continuous polish below refines it anyway.
+  if (any(!is.finite(c(d, y, x))) || is.unsorted(x, strictly = TRUE)) {
+    d <- d1; y <- y1; x <- x1
+  }
   my_env$df <- data.frame(h, d, y, x)
+  # v2.0-3: remove the grid error by a continuous polish on the same model
+  polished <- .dp_polish(my_env, h, use_distr = FALSE)
   # v2.0-2: keep full precision and make the top boundary the data maximum
   # (rounding the top boundary down used to drop the largest unit(s)).
   OSB <- my_env$maxval * my_env$df$x
   OSB[h] <- my_env$maxval * my_env$finval
+  # On very heavy-tailed data the fitted model can make the DP recursion fail
+  # (no feasible split for some stratum). Say so plainly instead of failing
+  # later with an obscure error.
+  if (any(!is.finite(OSB)) || is.unsorted(OSB, strictly = TRUE))
+    stop("The DP solver could not find valid boundaries for the fitted '",
+         as.character(my_env$obj["distr"]), "' distribution (the fit is probably poor in ",
+         "the tail). Use method = \"exact\" or method = \"cobyla\" for these data.",
+         call. = FALSE)
   .store_osb_env(OSB, my_env, h)
 
   attr(OSB, "converged")      <- TRUE
@@ -431,28 +453,34 @@ strata.data <- function(data,
 # Helper: re-fit distribution to REAL-scale data for the fit slot
 # =============================================================================
 .refit_real_scale <- function(data_raw, distr, my_env) {
-  tryCatch({
-    if (distr == "pareto") {
-      fitdistrplus::fitdist(data_raw, distr = "pareto",
-                            start = list(shape = 1, scale = 1),
-                            lower = c(0, 0))
-    } else if (distr %in% c("triangle", "rtriangle")) {
-      ## Fix min and max to sample bounds; estimate only mode.
-      ## Freeing all three params simultaneously gives a degenerate MLE.
-      a  <- min(data_raw); b <- max(data_raw)
-      eps <- (b - a) * 1e-6 + 1e-8
-      br <- pretty(data_raw, n = 20)
-      hh <- hist(data_raw, breaks = br, plot = FALSE)
-      m0 <- hh$mids[which.max(hh$counts)]
-      m0 <- min(max(m0, a + eps), b - eps)
-      fitdistrplus::fitdist(data_raw, distr = "triang", method = "mle",
-                            start   = list(mode = m0),
-                            fix.arg = list(min = a, max = b))
-    } else {
-      fitdistrplus::fitdist(data_raw, distr = distr, method = "mle",
-                            lower = c(0, 0))
-    }
-  }, error = function(e) {
-    list(distr = distr, estimate = my_env$obj[["params"]])
-  })
+  # v2.0-3: the Pareto and triangular families are not refitted with
+  # fitdistrplus (which needs dpareto()/dtriang() on the user's search path);
+  # their scaled-data estimates are converted to the real scale instead. The
+  # same conversion is the fallback if any refit fails, so the fit slot is
+  # always on the scale of the data.
+  real <- list(distr = distr,
+               estimate = .rescale_params(distr, my_env$obj[["params"]], my_env$maxval))
+  if (distr %in% c("pareto", "triangle", "rtriangle")) return(real)
+  tryCatch(
+    fitdistrplus::fitdist(data_raw, distr = distr, method = "mle"),
+    error = function(e) real)
+}
+
+# Convert distribution parameters fitted on data / maxval back to the scale of
+# the data.
+.rescale_params <- function(distr, p, maxval) {
+  p <- unlist(p)
+  sc <- function(nm) if (nm %in% names(p)) p[[nm]] <<- p[[nm]] * maxval
+  switch(distr,
+    pareto  = sc("scale"),
+    weibull = sc("scale"),
+    gamma   = if ("rate" %in% names(p)) p[["rate"]] <- p[["rate"]] / maxval,
+    exp     = if ("rate" %in% names(p)) p[["rate"]] <- p[["rate"]] / maxval,
+    lnorm   = if ("meanlog" %in% names(p)) p[["meanlog"]] <- p[["meanlog"]] + log(maxval),
+    norm    = { sc("mean"); sc("sd") },
+    cauchy  = { sc("location"); sc("scale") },
+    unif    = { sc("min"); sc("max") },
+    triangle = , rtriangle = { sc("min"); sc("max"); sc("mode") },
+    NULL)
+  p
 }

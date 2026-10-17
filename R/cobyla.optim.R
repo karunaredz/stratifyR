@@ -40,34 +40,28 @@
 # b_interior: interior boundary distances from initval on the SCALED axis (length H-1).
 # Returns sum_h Wh*Sh computed from the raw data.
 .cobyla_obj_data <- function(b_interior, my_env, H) {
-  # Convert scaled interior distances -> real-axis boundaries
+  # Interior boundaries on the real axis
   initval_real <- my_env$initval * my_env$maxval
   b_real <- sort(b_interior) * my_env$maxval + initval_real
-  boundaries   <- c(initval_real,
-                    b_real,
-                    my_env$finval * my_env$maxval)   # length H+1
 
   data_s <- my_env$data_sorted_real   # pre-sorted raw data (set in .solve_cobyla_data)
   N      <- length(data_s)
-  obj    <- 0
 
-  for (h in seq_len(H)) {
-    lo <- boundaries[h]
-    hi <- boundaries[h + 1L]
-    # First stratum is [min, b1]; the others are (b[h-1], b[h]].
-    # This matches data.alloc, so every unit is counted exactly once.
-    slice <- if (h == 1L)
-      data_s[data_s >= lo & data_s <= hi]
-    else
-      data_s[data_s > lo  & data_s <= hi]
-
-    Nh <- length(slice)
-    if (Nh < 2L) return(1e10)          # empty/singleton stratum -> infeasible
-    Wh  <- Nh / N
-    Sh  <- sqrt(stats::var(slice))
-    obj <- obj + Wh * Sh * sqrt(my_env$ch[h])
-  }
-  obj
+  # (v2.0-3) Assign units with the interior boundaries only, exactly as
+  # data.alloc does: the first stratum is everything up to b1, the last is
+  # everything above b[H-1]. Before, the outer limits were rebuilt as
+  # initval * maxval and finval * maxval, which can round a hair inside the
+  # data range and silently drop the smallest or largest unit; on heavy
+  # tailed data that made the objective much lower than the true cost.
+  grp <- findInterval(data_s, b_real, left.open = TRUE) + 1L
+  Nh  <- tabulate(grp, nbins = H)
+  if (any(Nh < 2L)) return(1e10)       # empty/singleton stratum -> infeasible
+  s1  <- rowsum(data_s, grp, reorder = TRUE)[, 1]
+  ctr <- data_s - mean(data_s)
+  s1c <- rowsum(ctr, grp, reorder = TRUE)[, 1]
+  s2c <- rowsum(ctr * ctr, grp, reorder = TRUE)[, 1]
+  Vh  <- pmax((s2c - s1c * s1c / Nh) / (Nh - 1), 0)
+  sum((Nh / N) * sqrt(Vh) * sqrt(my_env$ch[seq_len(H)]))
 }
 
 # Objective for the distribution-based pathway.
@@ -114,11 +108,16 @@
       N     <- length(data_sorted)
       alpha <- data_sorted[1L]
       beta  <- data_sorted[N]
+      # Jitter the starting PROBABILITIES, not the values: on a heavy-tailed
+      # population the range can be hundreds of times the interquartile
+      # range, and jitter on the value scale would throw every start far
+      # into the tail.
       probs <- seq(0, 1, length.out = H + 1L)[2:H]
+      if (seed_offset > 2L)
+        probs <- sort(pmin(0.999, pmax(0.001,
+                   probs + runif(nb, -0.5 / H, 0.5 / H))))
       q     <- quantile(data_sorted, probs = probs, names = FALSE)
-      q_sc  <- (q - alpha) / (beta - alpha) * rng        # scaled
-      jit   <- runif(nb, min = -rng / (4 * H), max = rng / (4 * H))
-      b     <- q_sc + jit
+      b     <- (q - alpha) / (beta - alpha) * rng        # scaled
     } else {
       # No data: uniformly sample the feasible region instead of jittering
       # around equal-spacing. Small jitter fails for skewed distributions where
@@ -131,7 +130,7 @@
   }
 
   # Ensure strictly increasing (remove near-duplicate interior boundaries)
-  min_gap <- rng / 1000
+  min_gap <- rng * 1e-6
   for (i in seq_len(nb - 1L)) {
     if (i + 1L <= nb && b[i + 1L] - b[i] < min_gap) {
       b[i + 1L] <- b[i] + min_gap
@@ -195,12 +194,13 @@
     function(b) .cobyla_obj_data(b, my_env, H)
   }
 
-  # Minimum separation between adjacent boundaries: dist/1000, as in the
-  # problem formulation.  Version 2.0-1 used dist/(3H), which excluded the
-  # narrow strata that skewed and heavy-tailed populations need.  Designs with
-  # fewer than two units in a stratum are handled by the objective (penalty)
-  # and by .cobyla_is_degenerate().
-  min_gap <- dist / 1000
+  # Minimum separation between adjacent boundaries: a tiny fraction of the
+  # range, only to keep boundaries distinct.  Version 2.0-1 used dist/(3H) and
+  # 2.0-2 used dist/1000; both can exclude the narrow lower strata that very
+  # heavy-tailed populations need.  Designs with fewer than two units in a
+  # stratum are handled by the objective (penalty) and by
+  # .cobyla_is_degenerate().
+  min_gap <- dist * 1e-6
   lb_vec  <- seq_len(nb) * min_gap                          # i-th boundary >= i*min_gap from start
   ub_vec  <- dist - (nb + 1L - seq_len(nb)) * min_gap      # symmetric from end
 
@@ -242,9 +242,28 @@
     }, error = function(e) NULL)
   }
 
+  # Data pathway: one start comes from a coarse exact search. Dynamic
+  # programming over about 400 quantile cut points (a few milliseconds) puts
+  # this start in the right region even on very heavy-tailed data, where the
+  # optimal lower strata occupy a tiny corner of the value range.
+  dp_start <- NULL
+  if (!use_distr) {
+    dp_start <- .coarse_exact_start(my_env, H)
+    if (!is.null(dp_start)) dp_start <- pmin(ub_vec, pmax(lb_vec, dp_start))
+  }
+
   best_val  <- Inf
   best_b    <- NULL
   best_conv <- FALSE
+  # (v2.0-3) The coarse exact start is itself a candidate answer, so the
+  # result can never be worse than it, even if the local solvers started
+  # from it stall on the step-shaped empirical objective.
+  if (!is.null(dp_start)) {
+    v0 <- tryCatch(obj_fn(dp_start), error = function(e) Inf)
+    if (is.finite(v0) && v0 < 1e9) {
+      best_val <- v0; best_b <- sort(dp_start); best_conv <- TRUE
+    }
+  }
 
   for (r in seq_len(n_starts)) {
     # Start selection:
@@ -253,6 +272,8 @@
     #  r >= 3 -> .cobyla_init random/uniform starts
     b_init <- if (r == 2L && !is.null(q_start)) {
       q_start
+    } else if (r == 2L && !is.null(dp_start)) {
+      dp_start
     } else {
       .cobyla_init(H, dist, data_sorted, seed_offset = r)
     }
@@ -310,9 +331,130 @@
 }
 
 
+
+
+# -----------------------------------------------------------------------------
+# Continuous polish of the DP grid solution (v2.0-3)
+# -----------------------------------------------------------------------------
+# The DP solver is globally optimal on a grid of 1,000 equally spaced points
+# for the fitted (or assumed) distribution. When the range is very wide, the
+# grid spacing can be larger than the optimal lower strata, so the grid alone
+# cannot reach the model's optimum. This step starts from the DP grid
+# solution and minimises the SAME model objective (the fitted or assumed
+# distribution, never the data) over continuous boundaries with BOBYQA. It is
+# accepted only if it lowers the model objective and, for data, keeps at
+# least two units in every stratum. DP therefore stays a model-based method;
+# the polish only removes the grid error.
+.dp_polish <- function(my_env, h, use_distr) {
+  nb <- h - 1L
+  if (nb < 1L) return(invisible(FALSE))
+  dist <- my_env$dist
+  b0   <- my_env$df$x[seq_len(nb)] - my_env$initval        # scaled distances
+  if (any(!is.finite(b0)) || is.unsorted(b0, strictly = TRUE)) return(invisible(FALSE))
+  obj <- if (use_distr) {
+    function(b) .cobyla_obj_distr(b, my_env, h)
+  } else {
+    function(b) .dp_obj_model_data(b, my_env, h)
+  }
+  f0 <- obj(b0)
+  if (!is.finite(f0) || f0 >= 1e9) return(invisible(FALSE))
+  sep <- dist * 1e-9
+  lb  <- seq_len(nb) * sep
+  ub  <- dist - (nb + 1L - seq_len(nb)) * sep
+  res <- tryCatch(nloptr::nloptr(
+           x0 = pmin(ub, pmax(lb, b0)), eval_f = obj, lb = lb, ub = ub,
+           opts = list(algorithm = "NLOPT_LN_BOBYQA", xtol_rel = 1e-10,
+                       ftol_rel = 1e-12, maxeval = 3000L)),
+           error = function(e) NULL)
+  if (is.null(res) || !is.finite(res$objective) ||
+      res$objective >= f0 * (1 - 1e-12)) return(invisible(FALSE))
+  b1 <- sort(res$solution)
+  if (!use_distr && .cobyla_is_degenerate(b1, my_env, h)) return(invisible(FALSE))
+  x  <- c(my_env$initval + b1, my_env$df$x[h])
+  my_env$df$x <- x
+  my_env$df$d <- x - my_env$initval
+  my_env$df$y <- diff(c(my_env$initval, x))
+  invisible(TRUE)
+}
+
+# Model objective for the data pathway: sum over strata of data.root(), i.e.
+# the Neyman cost under the FITTED distribution (the objective of the DP).
+.dp_obj_model_data <- function(b_interior, my_env, H) {
+  dist   <- my_env$dist
+  b_full <- c(0, sort(b_interior), dist)
+  obj <- 0
+  for (h in seq_len(H)) {
+    y_h <- b_full[h + 1L] - b_full[h]
+    if (y_h <= 0) return(1e10)
+    root <- data.root(d = b_full[h + 1L], y = y_h, c = my_env$ch[h], my_env = my_env)
+    if (!is.finite(root) || root == -1) return(1e10)
+    obj <- obj + root
+  }
+  obj
+}
+
+# -----------------------------------------------------------------------------
+# Coarse exact start for the data solvers (v2.0-3)
+# -----------------------------------------------------------------------------
+# Runs the exact dynamic programme over a small set of cut points (about 400,
+# spread in rank, plus the extreme ends), which takes a few milliseconds, and
+# returns the boundaries as scaled distances from initval, placed halfway
+# between neighbouring data values. NULL if it cannot be computed.
+.coarse_exact_start <- function(my_env, H, max_cand = 400L) {
+  if (!exists("data_sorted_real", envir = my_env, inherits = FALSE)) return(NULL)
+  tryCatch({
+    xs  <- get("data_sorted_real", envir = my_env)
+    tmp <- new.env()
+    tmp$ch <- my_env$ch; tmp$maxval <- my_env$maxval; tmp$finval <- my_env$finval
+    osb <- .solve_exact_data(xs, H, 2L * H, NA, tmp, max_cand = max_cand)
+    cut <- vapply(as.numeric(osb)[seq_len(H - 1L)], function(b) {
+      nxt <- xs[xs > b][1L]; if (is.na(nxt)) b else (b + nxt) / 2 }, numeric(1))
+    sort((cut - my_env$initval * my_env$maxval) / my_env$maxval)
+  }, error = function(e) NULL)
+}
+
+# -----------------------------------------------------------------------------
+# Rank-scale search for the data pathway (v2.0-2)
+# -----------------------------------------------------------------------------
+# On heavy-tailed data the range can be hundreds of times the interquartile
+# range, so on the value scale the region holding the optimal lower boundaries
+# is a tiny corner of the search box. The data solvers therefore search over
+# rank fractions x in (0, 1): x maps to the value at position 1 + x (N - 1) of
+# the sorted data (linear interpolation between neighbours). Every stratum
+# boundary then lives on the same well-spread scale, whatever the tail.
+.rank_map <- function(my_env) {
+  xs <- get("data_sorted_real", envir = my_env)
+  N  <- length(xs)
+  lo <- my_env$initval * my_env$maxval
+  to_b <- function(x) {
+    pos <- 1 + pmin(1, pmax(0, sort(x))) * (N - 1)
+    (stats::approx(seq_len(N), xs, xout = pos, ties = "ordered")$y - lo) / my_env$maxval
+  }
+  to_x <- function(b) {
+    v <- lo + sort(b) * my_env$maxval
+    (stats::approx(xs, seq_len(N), xout = v, rule = 2, ties = "mean")$y - 1) / (N - 1)
+  }
+  list(to_b = to_b, to_x = to_x, N = N)
+}
+
 # -----------------------------------------------------------------------------
 # Post-processing helpers
 # -----------------------------------------------------------------------------
+
+# Data pathway (v2.0-3): move each boundary to the midpoint between the two
+# data values on either side of it. The partition is the one the objective
+# evaluated (a unit equal to the boundary stays in the lower stratum), but the
+# boundary is now far from any data value, so rounding when it is moved back to
+# the real scale cannot shift tied units into the next stratum.
+.snap_data_bdist <- function(b_dist, my_env) {
+  xs <- my_env$data_sorted_real
+  lo <- my_env$initval * my_env$maxval
+  b  <- sort(b_dist) * my_env$maxval + lo          # as in .cobyla_obj_data
+  k  <- findInterval(b, xs)                        # xs[k] <= b < xs[k + 1]
+  ok <- k >= 1L & k < length(xs)
+  b[ok] <- (xs[k[ok]] + xs[pmin(k[ok] + 1L, length(xs))]) / 2
+  (b - lo) / my_env$maxval
+}
 
 # Convert scaled interior distances back to REAL-axis interior boundary values.
 # b_dist: interior distances from initval (scaled).
@@ -493,6 +635,7 @@
 # In that rare case .solve_cobyla_* fall back to the DP solver.
 .cobyla_is_degenerate <- function(b_dist, my_env, h) {
   if (length(b_dist) == 0L) return(FALSE)          # H=1: always valid
+  if (any(!is.finite(b_dist))) return(TRUE)        # failed solve
   # A solution is degenerate only if a stratum is (numerically) empty.
   # Width alone is not a test: optimal strata for skewed or heavy-tailed
   # populations can be much narrower than the "fair share" dist/H.
@@ -562,9 +705,22 @@
     function(b) .cobyla_obj_data(b, my_env, H)
 
   # Same min-gap constraints as the COBYLA solver
-  min_gap <- dist / 1000   # was dist/(3H); see audit
+  min_gap <- dist * 1e-6   # tiny separation only; see .cobyla_run
   lb_vec  <- seq_len(nb) * min_gap
   ub_vec  <- dist - (nb + 1L - seq_len(nb)) * min_gap
+
+  # Data pathway: search on the rank scale (see .rank_map)
+  rank_mode <- !use_distr &&
+    exists("data_sorted_real", envir = my_env, inherits = FALSE) &&
+    length(get("data_sorted_real", envir = my_env)) >= 2L * H
+  if (rank_mode) {
+    rm_     <- .rank_map(my_env)
+    obj_b   <- obj_fn
+    obj_fn  <- function(x) obj_b(rm_$to_b(x))
+    min_gap <- 1 / (rm_$N - 1)
+    lb_vec  <- seq_len(nb) * min_gap
+    ub_vec  <- 1 - (nb + 1L - seq_len(nb)) * min_gap
+  }
 
   # Auto-scale DIRECT-L budget with search-space dimensionality
   if (is.null(max_eval_global))
@@ -604,6 +760,16 @@
     sort(res_global$solution)
   else
     x0
+  # Data pathway: also consider the coarse exact start, and refine from
+  # whichever of the two points is better.
+  if (!use_distr) {
+    cs <- .coarse_exact_start(my_env, H)
+    if (!is.null(cs)) {
+      cs <- if (rank_mode) rm_$to_x(cs) else cs
+      cs <- pmin(ub_vec, pmax(lb_vec, sort(cs)))
+      if (is.finite(obj_fn(cs)) && obj_fn(cs) < obj_fn(b_warm)) b_warm <- cs
+    }
+  }
 
   ineq_fn <- if (nb > 1L) function(b) diff(sort(b)) - min_gap else NULL
 
@@ -648,16 +814,17 @@
   # Prefer the refined point on ties: BOBYQA starts at the DIRECT-L point, so an
   # equal objective means the refinement confirmed it (and has a proper
   # convergence status, whereas DIRECT-L always stops on its evaluation budget).
+  back <- function(x) if (rank_mode) rm_$to_b(x) else sort(x)   # value scale
   if (local_ok && (!global_ok || res_local$objective <= res_global$objective)) {
-    list(b_dist    = sort(res_local$solution),
+    list(b_dist    = back(res_local$solution),
          objective = res_local$objective,
          converged = res_local$status %in% c(1L, 2L, 3L, 4L))
   } else if (global_ok) {
-    list(b_dist    = sort(res_global$solution),
+    list(b_dist    = back(res_global$solution),
          objective = res_global$objective,
          converged = FALSE)
   } else {
-    list(b_dist    = x0,
+    list(b_dist    = back(x0),
          objective = Inf,
          converged = FALSE)
   }

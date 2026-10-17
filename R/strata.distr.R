@@ -106,6 +106,17 @@ strata.distr <- function(h,
   if (missing(n) && missing(N))
     stop("'n' or 'N' must be specified")
 
+  # v2.0-3: a bounded distribution must have some probability in the range
+  # [initval, initval + dist]; otherwise every stratum would be empty.
+  if (distr[1] %in% c("unif", "triangle", "rtriangle") &&
+      all(c("min", "max") %in% names(params))) {
+    lo_s <- params[["min"]]; hi_s <- params[["max"]]
+    if (initval + dist <= lo_s || initval >= hi_s)
+      stop(sprintf(paste0("The range [initval, initval + dist] = [%g, %g] lies outside ",
+                          "the support [%g, %g] of the '%s' distribution."),
+                   initval, initval + dist, lo_s, hi_s, distr[1]), call. = FALSE)
+  }
+
   # ---- build shared environment ----------------------------------------------
   my_env <- new.env(parent = emptyenv())
   my_env$h <- h
@@ -305,13 +316,14 @@ strata.distr <- function(h,
       x[i] <- y[i] + my_env$initval
     } else {
       d[i] <- d[i + 1L] - y[i + 1L]
-      temp <- as.integer(d[i] * points)
+      temp <- min(max(as.integer(round(d[i] * points)), 0L), ncol(my_env$dk2) - 1L)   # v2.0-3: round, not truncate
       y[i] <- my_env$dk2[i + 1L, temp + 1L]
       x[i] <- x[i + 1L] - y[i + 1L]
     }
   }
 
-  for (i in h:1) my_env$ylimits[i + 1L] <- as.integer(y[i] * points * z)
+  d1 <- d; y1 <- y; x1 <- x   # first (coarse) pass, kept as a fallback
+  for (i in h:1) my_env$ylimits[i + 1L] <- as.integer(round(y[i] * points * z))
 
   my_env$ObjFV <- distr.optim(k = h, n = e - 1L, incf = inc2,
                                minYk = my_env$ylimits[h + 1L] - my_env$factor * my_env$z,
@@ -329,13 +341,22 @@ strata.distr <- function(h,
       x[i] <- y[i] + my_env$initval
     } else {
       d[i] <- d[i + 1L] - y[i + 1L]
-      temp <- as.integer(d[i] * points * z)
+      temp <- min(max(as.integer(round(d[i] * points * z)), 0L), ncol(my_env$dk2) - 1L)   # v2.0-3: round, not truncate
       y[i] <- my_env$dk2[i + 1L, temp + 1L]
       x[i] <- x[i + 1L] - y[i + 1L]
     }
   }
 
+  # v2.0-3: the fine pass only fills a window of the table around the coarse
+  # answer. If its answer moves to the edge of that window, the earlier
+  # stages can look up cells that were never filled (NA). Then keep the
+  # coarse answer; the continuous polish below refines it anyway.
+  if (any(!is.finite(c(d, y, x))) || is.unsorted(x, strictly = TRUE)) {
+    d <- d1; y <- y1; x <- x1
+  }
   my_env$df <- data.frame(h, d, y, x)
+  # v2.0-3: remove the grid error by a continuous polish on the same model
+  polished <- .dp_polish(my_env, h, use_distr = TRUE)
   # v2.0-2: keep full precision and make the top boundary the range end
   OSB <- my_env$maxval * my_env$df$x
   OSB[h] <- my_env$maxval * my_env$finval

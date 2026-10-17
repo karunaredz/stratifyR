@@ -160,7 +160,9 @@ summary.strata <- function(object, ...) {
    if (in_knit && requireNamespace("knitr", quietly = TRUE)) {
       rng_txt <- sprintf("[%.4f, %.4f]  (d = %.4f)",
                          maxval * initval, maxval * finval, maxval * dist)
+      hdr <- character(0)
       if (is_html) {
+         hdr <- utils::capture.output({
          cat("<div style='margin-bottom:0.5rem'><span style='color:#0b7285;font-weight:700'>Stratification summary</span></div>\n", sep = "")
          cat(sprintf("<div><span style='color:#0b7285;font-weight:600'>Strata (h):</span> %s &nbsp; ", h))
          cat(sprintf("<span style='color:#0b7285;font-weight:600'>n:</span> %s &nbsp; ", n))
@@ -171,6 +173,7 @@ summary.strata <- function(object, ...) {
                         paste(ch, collapse = ", ")))
          }
          cat(sprintf("<div><span style='color:#0b7285;font-weight:600'>Best-fit distribution:</span> %s</div>\n\n", distr))
+         })
       } else {
          cat("Stratification summary\n\n")
          cat(sprintf("Strata (h): %s   n: %s   N: %s\n", h, n, if (is.null(N)) "NA" else N))
@@ -184,9 +187,15 @@ summary.strata <- function(object, ...) {
          pe <- data.frame(Parameter = names(param_est),
                           Estimate  = as.numeric(param_est),
                           check.names = FALSE)
-         print(knitr::kable(pe, digits = 6, align = c("l","r"), caption = "Parameter estimate(s)"))
+         if (is_html)
+            hdr <- c(hdr, as.character(knitr::kable(pe, format = "html", digits = 6,
+                                                    align = c("l","r"),
+                                                    caption = "Parameter estimate(s)")))
+         else
+            print(knitr::kable(pe, digits = 6, align = c("l","r"), caption = "Parameter estimate(s)"))
       } else {
-         cat("(no parameter estimates)\n\n")
+         if (is_html) hdr <- c(hdr, "<p>(no parameter estimates)</p>")
+         else cat("(no parameter estimates)\n\n")
       }
       
       digits <- c(0, 2, 2, 2, 3, 0, 0, 2)
@@ -213,7 +222,9 @@ summary.strata <- function(object, ...) {
            kableExtra::column_spec(5, color = purple_hex) |>               # WhSh purple
            kableExtra::row_spec(nrow(tab_html), bold = TRUE, color = gold_text) # TOTAL row yellow text
          
-         return(kb)
+         # v2.0-3: return the header, parameters and table as one HTML block,
+         # so they render as HTML rather than as escaped text in a document
+         return(knitr::asis_output(paste(c(hdr, as.character(kb)), collapse = "\n")))
       }
       
       # Non-HTML knit fallback
@@ -222,9 +233,11 @@ summary.strata <- function(object, ...) {
          caption = "Per-stratum results and totals",
          align   = c("r","r","r","r","r","r","r","r"),
          digits  = digits,
-         format  = getOption("knitr.kable.format", default = "pipe"),
+         format  = if (is_html) "html" else getOption("knitr.kable.format", default = "pipe"),
          escape  = TRUE
       )
+      if (is_html)
+         return(knitr::asis_output(paste(c(hdr, as.character(kb)), collapse = "\n")))
       return(kb)
    }
    

@@ -54,35 +54,60 @@ get.dist <- function(data, my_env) {
    
    fits <- list()
    
-   # ---- Pareto (actuar::pareto), positive-only ------------------------------
-   if (pos_only && requireNamespace("actuar", quietly = TRUE)) {
+   # ---- Pareto type II (Lomax), positive-only ---------------------------------
+   # v2.0-3: fitted directly by maximum likelihood. fitdistrplus::fitdist()
+   # looks for dpareto() on the user's search path, so inside the package the
+   # Pareto fit failed unless the user had attached actuar themselves.
+   if (pos_only) {
       fits$pareto <- try_fit(function() {
-         fitdistrplus::fitdist(
-            x, distr = "pareto", method = "mle",
-            start = list(shape = 1, scale = stats::quantile(x, 0.25)),
-            lower = c(1e-8, 1e-8)
-         )
+         n  <- length(x)
+         # Written as log f = log(a/s) - (a + 1) log(1 + x/s). The textbook
+         # form n a log(s) - (a + 1) sum(log(x + s)) subtracts two huge,
+         # nearly equal numbers when a and s are large, and the rounding
+         # error could make a poor Pareto fit look like the best one
+         # (seen on Apple silicon for Gamma, Weibull, uniform and
+         # triangular data).
+         nll <- function(p) {
+            if (any(abs(p) > 50)) return(1e300)
+            a <- exp(p[1]); s <- exp(p[2])
+            v <- -(n * (p[1] - p[2]) - (a + 1) * sum(log1p(x / s)))
+            if (is.finite(v)) v else 1e300
+         }
+         op <- stats::optim(c(log(2), log(stats::median(x))), nll,
+                            method = "Nelder-Mead",
+                            control = list(maxit = 2000, reltol = 1e-12))
+         op <- stats::optim(op$par, nll, method = "BFGS",
+                            control = list(maxit = 500, reltol = 1e-14))
+         if (!is.finite(op$value)) stop("Pareto fit did not converge")
+         list(aic = 2 * 2 + 2 * op$value,
+              estimate = c(shape = exp(op$par[1]), scale = exp(op$par[2])))
       })
    }
    
-   # ---- Triangular (mc2d::triang) -- fix min/max; estimate only mode --------
-   if (requireNamespace("mc2d", quietly = TRUE)) {
-      minx <- min(x); maxx <- max(x)
-      if (is.finite(minx) && is.finite(maxx) && minx < maxx) {
-         # empirical mode proxy (histogram bin with max count)
-         br <- pretty(x, n = 20)
-         hh <- hist(x, breaks = br, plot = FALSE)
-         m0 <- hh$mids[which.max(hh$counts)]
-         # keep mode strictly inside (minx, maxx)
-         eps <- (maxx - minx) * 1e-6 + 1e-8
-         m0  <- min(max(m0, minx + eps), maxx - eps)
-         
+   # ---- Triangular -----------------------------------------------------------
+   # v2.0-3: fitted directly. min and max are set just outside the sample
+   # range, by one average spacing (range / (n - 1)) on each side, because the
+   # triangular density is zero at its end points and the likelihood would be
+   # zero if they equalled the smallest and largest values. The maximum
+   # likelihood mode then lies at one of the data values, so the likelihood is
+   # evaluated at each distinct value (no optimiser, no search-path lookup).
+   {
+      minx <- min(x); maxx <- max(x); n <- length(x)
+      if (is.finite(minx) && is.finite(maxx) && minx < maxx && n >= 3L) {
          fits$triang <- try_fit(function() {
-            fitdistrplus::fitdist(
-               x, distr = "triang", method = "mle",
-               start   = list(mode = m0),
-               fix.arg = list(min = minx, max = maxx)
-            )
+            ext <- (maxx - minx) / (n - 1)
+            a <- minx - ext; b <- maxx + ext
+            cand <- sort(unique(x))
+            if (length(cand) > 2000L)
+               cand <- unique(stats::quantile(x, seq(0, 1, length.out = 2000L), names = FALSE))
+            ll <- vapply(cand, function(m) {
+               f <- ifelse(x <= m, 2 * (x - a) / ((b - a) * (m - a)),
+                                   2 * (b - x) / ((b - a) * (b - m)))
+               sum(log(f))
+            }, 0)
+            k <- which.max(ll)
+            list(aic = 2 * 3 - 2 * ll[k],
+                 estimate = c(min = a, max = b, mode = cand[k]))
          })
       }
    }
@@ -136,8 +161,15 @@ get.dist <- function(data, my_env) {
    }
    
    # ---- Cauchy ---------------------------------------------------------------
+   # v2.0-3: start at the median and half the interquartile range, and keep
+   # the scale positive; the unconstrained default often failed to converge.
    fits$cauchy <- try_fit(function() {
-      fitdistrplus::fitdist(x, "cauchy", method = "mle")
+      fitdistrplus::fitdist(
+         x, "cauchy", method = "mle",
+         start = list(location = stats::median(x),
+                      scale    = max(stats::IQR(x) / 2, 1e-8)),
+         lower = c(-Inf, 1e-12)
+      )
    })
    
    # ---- collect & choose -----------------------------------------------------

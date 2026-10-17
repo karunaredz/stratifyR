@@ -32,7 +32,20 @@
   cand <- cand[cand >= 2L & cand <= Ntot - 2L]
   exact_full <- TRUE
   if (length(cand) > max_cand) {
-    keep <- unique(round(seq(1, length(cand), length.out = max_cand)))
+    # Spread the cut points evenly in rank, but always keep the first and last
+    # few: on heavy-tailed data the optimum can isolate a handful of extreme
+    # units in the outer strata, and an even spread would skip those cuts.
+    # (v2.0-3) The kept end cuts are spaced geometrically in rank from each
+    # end (1, 2, 3, ... then growing by a fixed ratio), so the search sees the
+    # far tails in fine detail on both sides, as two-sided heavy tails need.
+    L     <- length(cand)
+    n_end <- max(4L * h, floor(max_cand / 8))
+    geo   <- unique(pmax(1L, round(exp(seq(0, log(max(2, L / 4)), length.out = n_end)))))
+    geo   <- sort(unique(c(seq_len(min(4L * h, L)), geo)))
+    ends  <- unique(c(geo, L - geo + 1L))
+    ends  <- ends[ends >= 1L & ends <= L]
+    keep  <- sort(unique(c(ends, round(seq(1, length(cand),
+                                           length.out = max_cand - length(ends))))))
     cand <- cand[keep]
     exact_full <- FALSE
   }

@@ -891,7 +891,9 @@ plot.strata <- function(x,
   for (h in seq_len(H)) {
     lo    <- full_B[h]
     hi    <- full_B[h + 1L]
-    slice <- if (h == 1L) data_sorted[data_sorted >= lo & data_sorted <= hi]
+    # outer strata are open-ended, as in data.alloc (v2.0-3)
+    slice <- if (h == 1L) data_sorted[data_sorted <= hi]
+              else if (h == H) data_sorted[data_sorted > lo]
               else         data_sorted[data_sorted >  lo & data_sorted <= hi]
     Nh <- length(slice)
     if (Nh < 2L) next

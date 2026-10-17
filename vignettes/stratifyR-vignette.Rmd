@@ -37,7 +37,7 @@ library(triangle)
 
 **Title** Optimal Stratification of Univariate Populations
 
-**Version** 2.0-2
+**Version** 2.0-3
 
 **Date** 2026-10-14
 
@@ -405,11 +405,11 @@ summary(res)
 
 ## Motivation
 
-The Dynamic Programming solver described in Section 4 is the foundation of **stratifyR**. It searches a grid of 1,000 candidate positions and is globally optimal on that grid for the distribution it is given. Two things limit it in practice. First, the search grows quickly with the number of strata $h$, so it can take a minute or more at $h = 5$ or $6$. Second, in `strata.data()` the DP optimises the *fitted* distribution, not the data themselves. When the fitted family describes the data well the two problems have almost the same solution, but when the fit is poor (for example in a very heavy tail) the DP boundaries can be noticeably worse for the actual population.
+The Dynamic Programming solver described in Section 4 is the foundation of **stratifyR**. It searches a grid of 1,000 candidate positions and is globally optimal on that grid for the distribution it is given. Since version 2.0-3 it then tries a short local refinement of the boundaries off the grid, which is kept only if it lowers the cost, so the result can only get better. Two things limit it in practice. First, the search grows quickly with the number of strata $h$, so it can take a minute or more at $h = 5$ or $6$. Second, in `strata.data()` the DP optimises the *fitted* distribution, not the data themselves. When the fitted family describes the data well the two problems have almost the same solution, but when the fit is poor (for example in a very heavy tail) the DP boundaries can be noticeably worse for the actual population.
 
 **stratifyR** 2.0 therefore offers four solvers through the `method` argument:
 
-- `method = "dp"` (default): the original DP grid search on the fitted distribution;
+- `method = "dp"` (default): the original DP grid search on the fitted distribution, followed by a small local refinement;
 - `method = "cobyla"`: a fast multi-start derivative-free local optimiser;
 - `method = "global"`: a two-phase global search (DIRECT-L followed by BOBYQA refinement);
 - `method = "exact"` (`strata.data()` only): DP run directly on the sorted data, which returns the best possible stratification of the population.
@@ -418,9 +418,9 @@ DP remains the default, so code written for version 1.x gives the same kind of r
 
 ## The COBYLA Method (`method = "cobyla"`)
 
-COBYLA (Constrained Optimisation BY Linear Approximations, @Powell1994) is a derivative-free method that minimises a function subject to inequality constraints by building linear models of the objective and constraints. **stratifyR** treats the $h-1$ interior boundaries as continuous variables. Adjacent boundaries must be at least one thousandth of the range apart, as in the problem formulation, and every stratum must hold at least two units.
+COBYLA (Constrained Optimisation BY Linear Approximations, @Powell1994) is a derivative-free method that minimises a function subject to inequality constraints by building linear models of the objective and constraints. **stratifyR** treats the $h-1$ interior boundaries as continuous variables. Adjacent boundaries must not cross, and every stratum must hold at least two units.
 
-The solver is run from several starting points (argument `n_starts`, default 20): equally spaced boundaries, equal-probability quantiles, and random restarts. From each start both COBYLA and BOBYQA are run and the better result is kept. The best result over all starts is returned. The random restarts do not change the user's random number stream.
+The solver is run from several starting points (argument `n_starts`, default 20): equally spaced boundaries, equal-probability quantiles, and random restarts. With `strata.data()` one more start comes from a quick, coarse exact search over a few hundred quantile cut points. This start matters for very skewed data, where the best lower strata are narrow and hard to find from equally spaced starts. From each start both COBYLA and BOBYQA are run and the better result is kept. The best result over all starts is returned. The random restarts do not change the user's random number stream.
 
 - For `strata.distr()`, COBYLA minimises the same analytical objective as the DP, but over continuous boundaries rather than a grid.
 - For `strata.data()`, COBYLA minimises the empirical objective $\sum_h W_h S_h$ computed from the data. This is exactly the quantity reported as `WhShTot`.
@@ -431,13 +431,13 @@ The solver is run from several starting points (argument `n_starts`, default 20)
 
 ## The GLOBAL Method (`method = "global"`)
 
-**Phase 1, DIRECT-L.** DIRECT-L (Dividing RECTangles, locally biased; @GablonskyKelley2001) splits the search box into smaller boxes and samples their centres, refining boxes that are either promising or still large and unexplored. It is deterministic and uses a budget of $\max(5000, 5000(h-1))$ evaluations.
+**Phase 1, DIRECT-L.** DIRECT-L (Dividing RECTangles, locally biased; @GablonskyKelley2001) splits the search box into smaller boxes and samples their centres, refining boxes that are either promising or still large and unexplored. It is deterministic and uses a budget of $\max(5000, 5000(h-1))$ evaluations. With `strata.data()` the search runs on the rank scale: each boundary is described by its position in the sorted data, so the search looks at a long tail and the bulk of the data in equal detail.
 
-**Phase 2, BOBYQA.** The best DIRECT-L point is polished with the BOBYQA local optimiser. If neither phase finds a feasible design (one with at least two units in every stratum), the solver falls back to multi-start COBYLA.
+**Phase 2, BOBYQA.** The best DIRECT-L point, or the coarse exact start if that is better, is polished with the BOBYQA local optimiser. If neither phase finds a feasible design (one with at least two units in every stratum), the solver falls back to multi-start COBYLA.
 
 **Advantages:** deterministic and reproducible; on smooth problems and moderate $h$ it usually reaches the same solution as COBYLA.
 
-**Limitations:** when the data cover a very wide range, the fixed evaluation budget may not be enough to find narrow strata near the bottom of a skewed distribution, especially for larger $h$. If GLOBAL and COBYLA disagree, trust the lower `WhShTot`, or check with `method = "exact"`.
+**Limitations:** it is slower than COBYLA, and like any search with a fixed budget it can stop slightly short of the optimum. If GLOBAL and COBYLA disagree, trust the lower `WhShTot`, or check with `method = "exact"`.
 
 ## The EXACT Method (`method = "exact"`)
 
@@ -492,7 +492,7 @@ cat("COBYLA OSB:", round(res_cob_d$OSB, 3),  "  WhShTot:", res_cob_d$WhShTot, "\
 cat("GLOBAL OSB:", round(res_glob_d$OSB, 3), "  WhShTot:", res_glob_d$WhShTot, "\n")
 ```
 
-All three solvers minimise the same smooth objective here, and they agree to within the DP grid spacing. COBYLA and GLOBAL take a fraction of a second, while the DP takes much longer.
+All three solvers minimise the same smooth objective here, and they give the same boundaries: the local refinement at the end of the DP moves its grid solution to the continuous optimum. COBYLA and GLOBAL take a fraction of a second, while the DP takes much longer.
 
 ## Application: Comparing Methods for `strata.data`
 
@@ -821,7 +821,7 @@ Substituting the values of $a$, $b$, $y_{0}$ and $d$, the OSW ($l_{h}^{*}$) and 
 
 ### A Numerical Example for Right-Triangular Distribution
 
-A data following Right-Triangular distribution, of size $N=5000$, was simulated to demonstrate the application of the **stratifyR** package. The simulated data takes in three parameters where $a=c$ to indicate that it's a Right-Triangular distribution. Upon fitting the data, its best-fit distribution exhibits a three-parameter Triangular distribution with the parameters $min = 1.987776$, $max=7.935599$ and $mode=2.026685$. Note that because the $min$ and $mode$ parameters are very close to each and not exactly the same, it is treated as a Triangular distribution even thought the data simulated was for a Right-Triangular distribution. The minimum and maximum values in the simulated data are $[y_{0}, y_{L}] = [2.000052, 7.83871]$ with $d=5.838658$. 
+A data following Right-Triangular distribution, of size $N=1000$, was simulated to demonstrate the application of the **stratifyR** package. The simulated data takes in three parameters where $a=c$ to indicate that it's a Right-Triangular distribution. The minimum and maximum values in the simulated data are $[y_{0}, y_{L}] = [2.000052, 7.83871]$ with $d=5.838658$. 
 
 To construct the OSB ($h = 2$) for the Right-Triangular data with a fixed total sample size of $500$, we use the following code:
 
@@ -834,12 +834,12 @@ res <- strata.data(data, h = 2, n=500) # a 2-strata solution
 summary(res)
 ```
 
-We see in the above example that the simulated data is a Right-Triangular distribution, however, when data is fitted using MLE method in the package, it turns out that it best-fits Triangular distribution because the $min$ is not exactly equal to $mode$. 
+The package fits a triangular distribution by maximum likelihood, with $min$ and $max$ placed just outside the range of the data ($min = 1.994208$ and $max = 7.844554$). The fitted mode is the smallest data value, so the package recognises the shape and reports the best-fit distribution as Right-Triangular. 
 
 Similarly, in order to find the OSB and other quantities, we can apply the **strata.distr()** function to a Right-Triangular population. Based on the assumption from past knowledge that the population follows Right-Triangular distribution with the given attributes such as the initial value, distance, parameters, etc., we can execute the following command to obtain the results:
 
 ```{r include=TRUE}
-res <- strata.distr(h=2, initval=1.007202, dist=0.992781, distr = "rtriangle",
+res <- strata.distr(h=2, initval=2, dist=8, distr = "rtriangle",
          params = c(min=2, max=10, mode=2), n=500, N=1000)
 summary(res)
 ```
@@ -1120,7 +1120,7 @@ res <- strata.data(data, h = 2, n=450) # a 2-strata solution
 summary(res)
 ```
 
-Note that the above results indicate that the best-fit distribution is Triangular and not Uniform. This is because when **stratifyR** package assesses the data to ascertain the best-fit distribution, it is not able to calculate its AIC value for Uniform distribution. Hence, the distribution that gives the lowest AIC is taken to be the best-fit distribution. Since AIC for Uniform distribution is not available, the next best-fit distribution (Triangular) is be chosen. The results, you would find, are still quite accurate!
+The results show that the best-fit distribution is the Uniform, with estimates $min = 2.006522$ and $max = 14.997645$, which are the smallest and largest values in the data.
 
 Similarly, we can apply the **strata.distr()** function for the Uniform distribution where the arguments can be assumed from past knowledge. To construct the OSB for $h = 2$ for a hypothetical variable that follows Uniform distribution (with parameters $min=3$ and $max=15$) with a fixed total sample size of $450$ from a population of $5000$, the following command is used:
 
@@ -1338,7 +1338,7 @@ summary(res)
 
 # Summary of Method Comparison Across All Supported Distributions
 
-To compare the four solvers on the examples of Section 9, we ran `strata.data()` with $h = 3$ on the data used in each distribution section. Table 1 shows the Neyman cost $\sum W_h S_h$ (`WhShTot`) for each solver, and the gap of the DP cost above the exact optimum. The values were computed with **stratifyR** 2.0-2; the code to reproduce them is given after the table.
+To compare the four solvers on the examples of Section 9, we ran `strata.data()` with $h = 3$ on the data used in each distribution section. Table 1 shows the Neyman cost $\sum W_h S_h$ (`WhShTot`) for each solver, and the gap of the DP cost above the exact optimum. The values were computed with **stratifyR** 2.0-3; the code to reproduce them is given after the table.
 
 ```{r echo=FALSE, message=FALSE}
 comparison_table <- data.frame(
@@ -1348,13 +1348,13 @@ comparison_table <- data.frame(
            "anaemia Folate", "Simulated", "Simulated", "Simulated",
            "hies Expenditure", "Boston black"),
   N = c(5000, 487, 1000, 724, 724, 5000, 5000, 5000, 3566, 506),
-  `AIC family` = c("weibull", "weibull", "lnorm", "norm", "norm",
+  `AIC family` = c("pareto", "weibull", "rtriangle", "norm", "norm",
                    "exp", "unif", "norm", "lnorm", "cauchy"),
-  DP     = c(0.9382, 7.1172, 0.4959, 2.4638, 2.9357, 0.27360, 1.2471, 0.71698, 4678.5, 20.672),
+  DP     = c(0.9276, 7.1172, 0.4889, 2.4638, 2.9357, 0.27360, 1.2471, 0.71698, 4678.5, 20.672),
   COBYLA = c(0.9271, 7.0916, 0.4885, 2.4434, 2.8985, 0.27341, 1.2470, 0.71685, 4598.9, 14.921),
   GLOBAL = c(0.9271, 7.0916, 0.4885, 2.4434, 2.8985, 0.27341, 1.2470, 0.71685, 4598.9, 14.921),
   EXACT  = c(0.9271, 7.0916, 0.4885, 2.4434, 2.8985, 0.27341, 1.2470, 0.71685, 4598.9, 14.921),
-  `DP gap (%)` = c(1.19, 0.36, 1.50, 0.84, 1.28, 0.07, 0.01, 0.02, 1.73, 38.5),
+  `DP gap (%)` = c(0.05, 0.36, 0.08, 0.84, 1.28, 0.07, 0.01, 0.02, 1.73, 38.5),
   check.names = FALSE
 )
 knitr::kable(comparison_table, align = "llrlrrrrr",
@@ -1363,9 +1363,9 @@ knitr::kable(comparison_table, align = "llrlrrrrr",
 
 Three points stand out.
 
-1. **COBYLA, GLOBAL and EXACT agree everywhere.** On all ten examples, the two fast solvers found the exact optimum. They took between 0.2 and 2.5 seconds, and EXACT took between 0.03 and 1.3 seconds.
+1. **COBYLA, GLOBAL and EXACT agree everywhere.** On all ten examples, the two fast solvers found the exact optimum. Each of the three took at most a few seconds.
 
-2. **DP is within 2% of the optimum when the fitted model is reasonable.** The gap is below 0.1% for the exponential, uniform and normal data, where the chosen family matches the data well, and between 0.4% and 1.7% for the skewed examples. The DP took 20 to 50 seconds per run at $h = 3$.
+2. **DP is within 2% of the optimum when the fitted model is reasonable.** The gap is below 0.1% for the Pareto, right-triangular, exponential, uniform and normal data, where the chosen family matches the data well, and between 0.4% and 1.7% for the other skewed examples. The DP took 20 to 50 seconds per run at $h = 3$.
 
 3. **The DP depends on the fitted model.** For the Boston `black` variable, the AIC chooses the Cauchy, but the data are strongly skewed to the left and the fitted Cauchy describes them poorly. The DP boundaries, which are optimal for that model, cost 38.5% more than the exact optimum for the actual data. Fitting a distribution is what makes `strata.distr()` possible when no data are available, but when the data are at hand, it is worth checking the DP result against `method = "exact"`.
 

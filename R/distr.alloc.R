@@ -340,9 +340,19 @@ distr.alloc <- function(my_env)
   
   # ----------------------- assemble user-facing outputs ----------------------
   # v2.0-2: whole-number sample sizes that add up to n (largest remainder)
-  nh <- .round_alloc(nh, round(Nh))
+  # v2.0-3: whole-number stratum sizes that add up to N (largest remainder);
+  # rounding each N * Wh on its own could give a total of N - 1 or N + 1.
+  # The model weights add up to 1 only approximately, so the target is N.
+  Nh_int <- floor(Nh + 1e-8)
+  target <- if (!is.null(N) && is.finite(N)) round(N) else round(sum(Nh))
+  left   <- target - sum(Nh_int)
+  if (left > 0 && left <= h) {
+    ord <- order(Nh - Nh_int, decreasing = TRUE)[seq_len(left)]
+    Nh_int[ord] <- Nh_int[ord] + 1
+  }
+  nh <- .round_alloc(nh, Nh_int)
   fh <- round(nh / Nh, 2)
-  my_env$out <- data.frame(nh = nh, Nh = round(Nh), fh = fh)
+  my_env$out <- data.frame(nh = nh, Nh = Nh_int, fh = fh)
   
   # Build the summary table ONCE (AWh for all except uniform, which uses Wh)
   outWh <- if (distr == "unif") Wh else AWh
@@ -355,7 +365,7 @@ distr.alloc <- function(my_env)
   # ----------------------- totals for summary() ------------------------------
   my_env$deno  <- round(deno, 3)
   my_env$WhTot <- if (distr == "unif") round(sum(Wh), 2) else round(sum(AWh), 2)
-  my_env$NhTot <- round(sum(Nh))
+  my_env$NhTot <- sum(Nh_int)
   my_env$nhTot <- round(sum(nh))
   my_env$VhTot <- round(sum(Vh), 2)
   my_env$fhTot <- round(my_env$nhTot / my_env$NhTot, 2)

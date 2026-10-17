@@ -197,44 +197,14 @@ data.root <- function(d, y, c, my_env)
   ## Triangle branch
   ##  Piecewise based on mode; matches your original formulas.
   ## ===========================================================================
-  if (distr == "triangle") {
-    a  <- my_env$obj[["params"]]["min"]
-    b  <- my_env$obj[["params"]]["max"]
-    m  <- my_env$obj[["params"]]["mode"]
-    if (initval == 0) initval <- initval + 1e-10
-    
-    xh  <- d + initval
-    xh1 <- d - y + initval
-    
-    # Left piece (up-slope)
-    wh1    <- (y * (y + 2 * (xh1 - a))) / ((b - a) * (m - a))
-    muh1   <- ((2/3) * y^2 + 2*y*xh1 - a*y + 2*(xh1 - a)*xh1) / (y + 2*(xh1 - a))
-    sig2h1 <- (y^2 * (y^2 + 6*y*(xh1 - a) + 6*(xh1 - a)^2)) / (18 * (y + 2*(xh1 - a))^2)
-    
-    # Right piece (down-slope)
-    wh2    <- (y * (2*(b - xh1) - y)) / ((b - a) * (b - m))
-    muh2   <- (3*(b - xh1)*y - 3*y*xh1 + 6*(b - xh1)*xh1 - 2*y^2) / (3 * (2*(b - xh1) - y))
-    sig2h2 <- (y^2 * (6*(b - xh1)^2 - 6*y*(b - xh1) + y^2)) / (18 * (2*(b - xh1) - y)^2)
-    
-    calc <- if (d <= m) (wh1^2) * sig2h1 * c else (wh2^2) * sig2h2 * c
-  }
-  
-  ## ===========================================================================
-  ## Right-triangle branch
-  ## ===========================================================================
-  if (distr == "rtriangle") {
+  if (distr == "triangle" || distr == "rtriangle") {
     a <- my_env$obj[["params"]]["min"]
     b <- my_env$obj[["params"]]["max"]
-    if (initval == 0) initval <- initval + 1e-10
-    
-    xh  <- d + initval
-    xh1 <- d - y + initval
-    
-    wh    <- (y * (2*(b - xh1) - y)) / ((b - a)^2)
-    muh   <- (3*b*(y + 2*xh1) - 2*(y^2 + 3*y*xh1) + 3*xh1^2) / (3 * (2*(b - xh1) - y))
-    sig2h <- (y^2 * (y^2 - 6*(b - xh1)*y + 6*(b - xh1)^2)) / (18 * (2*(b - xh1) - y)^2)
-    
-    calc <- (wh^2) * sig2h * c
+    m <- if (distr == "rtriangle") a else my_env$obj[["params"]]["mode"]
+    xh1  <- d - y + initval
+    # v2.0-3: exact moments over the stratum, splitting at the mode when the
+    # stratum contains it (the old formula used one side of the triangle only)
+    calc <- .triang_w2s2(xh1, xh1 + y, a, b, m) * c
   }
   
   ## ===========================================================================
@@ -265,18 +235,9 @@ data.root <- function(d, y, c, my_env)
     xh  <- d + initval
     xh1 <- d - y + initval
     
-    Wh <- (s / (xh1 + s))^a - (s / (y + xh1 + s))^a
-    A  <- ( (y + xh1 + s)^(2 - a) ) / (2 - a)
-    B  <- ( 2 * s * (y + xh1 + s)^(1 - a) ) / (1 - a)
-    C0 <- ( (s^2) * (y + xh1 + s)^(-a) ) / a
-    D  <- ( (xh1 + s)^(2 - a) ) / (2 - a)
-    E  <- ( 2 * s * (xh1 + s)^(1 - a) ) / (1 - a)
-    G  <- ( (s^2) * (xh1 + s)^(-a) ) / a
-    H  <- (a * (y + xh1) + s) / ((y + xh1 + s)^a)
-    I  <- (a * xh1 + s) / ((xh1 + s)^a)
-    
-    calc <- ((a * s^a) * Wh * (A - B - C0 - D + E + G) -
-               ((s^(2*a)) / (1 - a)^2) * (H - I)^2) * c
+    # v2.0-3: numerically stable form, valid for every shape > 0
+    # (the old closed form divided by (2 - a) and (1 - a)).
+    calc <- .pareto_w2s2(xh1, y, a, s) * c
   }
   
   ## ---------------------------------------------------------------------------
@@ -291,3 +252,46 @@ data.root <- function(d, y, c, my_env)
   }
 }
 #########################################################
+# -----------------------------------------------------------------------------
+# .pareto_w2s2 (internal, v2.0-3)
+# -----------------------------------------------------------------------------
+# W_h^2 S_h^2 for the stratum [L, L + y] of a Pareto type II (Lomax) variable
+# with shape a and scale s, i.e. M0 * M2 - M1^2 where Mk are the truncated
+# moments of T = X + s. Each moment is an integral of t^(e - 1) between
+# T1 = L + s and T2 = L + y + s, computed as T1^e * expm1(e log(T2/T1)) / e,
+# which stays accurate as e -> 0. This removes the removable singularities of
+# the textbook closed form at a = 1 and a = 2 (heavy tails with infinite
+# variance have fitted shapes close to 2).
+.pareto_w2s2 <- function(L, y, a, s) {
+  T1 <- L + s
+  T2 <- L + y + s
+  if (!is.finite(T1) || !is.finite(T2) || T1 <= 0 || T2 <= T1) return(NaN)
+  lr <- log(T2 / T1)
+  g  <- function(e) if (abs(e * lr) < 1e-12) lr * T1^e else T1^e * expm1(e * lr) / e
+  k  <- a * s^a
+  M0 <- k * g(-a); M1 <- k * g(1 - a); M2 <- k * g(2 - a)
+  as.numeric(M0 * M2 - M1^2)
+}
+
+# -----------------------------------------------------------------------------
+# .triang_w2s2 (internal, v2.0-3)
+# -----------------------------------------------------------------------------
+# W_h^2 S_h^2 = M0 * M2 - M1^2 for the stratum [L, U] of a triangular
+# distribution with min a, mode m and max b, where Mk are the exact truncated
+# moments. The density is linear on each side of the mode, so each moment is a
+# polynomial integral; the stratum is split at the mode when it contains it.
+# Values are shifted by a for accuracy (the variance is shift invariant).
+.triang_w2s2 <- function(L, U, a, b, m) {
+  L <- max(L, a); U <- min(U, b)
+  if (!is.finite(L) || !is.finite(U) || !(U > L) || !(b > a)) return(NaN)
+  B <- b - a; M <- min(max(m - a, 0), B); l <- L - a; u <- U - a
+  add <- function(lo, hi, c0, c1) {
+    if (hi <= lo) return(c(0, 0, 0))
+    vapply(0:2, function(k) c0 * (hi^(k + 1) - lo^(k + 1)) / (k + 1) +
+                            c1 * (hi^(k + 2) - lo^(k + 2)) / (k + 2), 0)
+  }
+  mom <- c(0, 0, 0)
+  if (M > 0) mom <- mom + add(l, min(u, M), 0, 2 / (B * M))
+  if (M < B) mom <- mom + add(max(l, M), u, 2 / (B - M), -2 / (B * (B - M)))
+  as.numeric(mom[1] * mom[3] - mom[2]^2)
+}

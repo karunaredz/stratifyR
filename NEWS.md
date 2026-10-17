@@ -1,3 +1,115 @@
+# stratifyR 2.0-3  (2026-10-16)
+
+A robustness release for very heavy-tailed populations, found with a 20-seed
+repeat of the simulation study.
+
+## Solvers
+
+* `method = "cobyla"` on data: one of the starting points now comes from a
+  quick, coarse exact search (dynamic programming over about 400 quantile cut
+  points, a few milliseconds). On infinite-variance samples such as a Pareto
+  with shape 2, whose range can be hundreds of times the interquartile range,
+  COBYLA previously missed the narrow lower strata at larger `h` (up to 170%
+  above the optimum); it is now within 1% of the exact optimum in all our tests.
+* `method = "cobyla"`: random restarts now perturb the starting probabilities
+  rather than the boundary values, and the minimum separation between
+  boundaries is a tiny fraction of the range instead of `range/1000`.
+* `method = "global"` on data now searches on the rank scale (boundaries are
+  parameterised by their position in the sorted data), so DIRECT-L covers the
+  lower tail as finely as the rest of the data.
+* A failed COBYLA solve on extreme data could stop `strata.data()` with an
+  obscure `findInterval()` error; it is now handled.
+* When the DP recursion cannot find valid boundaries for the fitted
+  distribution (possible on very heavy-tailed data), `strata.data()` now stops
+  with a clear message suggesting `method = "exact"` or `method = "cobyla"`.
+
+* `method = "dp"`: after the DP search on the fitted model, a short local
+  refinement (BOBYQA) of the boundaries is tried. It is kept only when it
+  lowers the model cost and gives valid strata, so it can never make the
+  DP solution worse. This removes most of the error caused by the grid.
+* `method = "dp"`: two fixes in the original DP traceback. Grid positions
+  were converted to table indices by truncation, so a value such as
+  3.9999999 grid steps was read as step 3; they are now rounded. And the
+  second, finer pass only fills a window of the table around the first
+  answer; when its answer moved to the edge of that window, earlier stages
+  read empty cells and the solver stopped. It now keeps the first-pass
+  answer in that case (the final refinement improves it anyway).
+* `method = "exact"`: when very large data are thinned to a candidate set,
+  the smallest and largest values are now always kept.
+
+## Distribution fitting
+
+* Pareto and triangular fits never succeeded inside the package (the
+  fitting function looked for `dpareto()` and `dtriang()` on the search
+  path), so these families were never chosen and DP used a wrong model on
+  such data. Both are now fitted by maximum likelihood with their own code:
+  the Pareto (Lomax) shape and scale by Nelder-Mead and BFGS on the log
+  scale, and the triangle by profiling the likelihood over the mode with
+  the bounds set just outside the data range.
+* The Pareto log-likelihood is computed in a numerically stable form. The
+  textbook form subtracts two huge, nearly equal numbers when the shape and
+  scale are large; on Apple silicon the optimiser could drift there, the
+  log-likelihood collapsed to about zero, and the Pareto then wrongly won
+  the AIC comparison on gamma, Weibull, uniform and triangular data (and
+  the DP then stopped).
+* The Cauchy fit now uses robust starting values (median and half the IQR)
+  and keeps the scale positive, so it no longer fails on extreme samples.
+* `strata.data()` reports right-triangular data as `"rtriangle"` correctly,
+  and fitted parameters are moved back to the data scale correctly for the
+  Pareto and triangular families.
+
+## Stratum variances
+
+* Pareto strata: the truncated moments are computed in a numerically stable
+  form, which matters for shapes near 2 and wide strata.
+* Triangular and right-triangular strata: exact closed-form truncated
+  moments (split at the mode) replace the previous approximation.
+* Both were checked against numerical integration to about 1e-14.
+
+## Other fixes
+
+* `method = "cobyla"` and `method = "global"` on data: the objective rebuilt
+  the outer limits of the range as `initval * maxval` and `finval * maxval`,
+  which can round a hair inside the data, so the smallest or largest unit
+  was silently left out while optimising. On data with extreme values in
+  both tails (for example a Cauchy sample) the solvers then optimised the
+  wrong cost and could end up far from the optimum (up to 41% in a 20-seed
+  study). Units are now assigned with the interior boundaries only, exactly
+  as in the final allocation, and both solvers reach the exact optimum on
+  these samples. The same fix is applied in the interactive boundary plot.
+* `method = "cobyla"` on data now keeps the coarse exact start as a
+  candidate answer, so its result can never be worse than that start, and
+  the coarse search keeps more cut points in both tails.
+
+* `method = "cobyla"` and `method = "global"` on data now place each boundary
+  halfway between the two data values on either side of it. Before, on data
+  with many tied values, rounding could move the tied units at a boundary
+  into the next stratum, so the reported `WhShTot` could be slightly higher
+  than the cost the solver had found (0.2% on the `math` data at `h = 3`).
+* `strata.distr()` now stops with a clear message when the range
+  `[initval, initval + dist]` lies outside the support of a uniform or
+  triangular distribution, instead of failing inside the allocation step.
+* `strata.distr()`: the stratum population sizes `Nh` now add up to `N`
+  exactly (largest remainder). Before, each `N * Wh` was rounded on its own,
+  so the total could be off by one.
+* `summary()` output inside R Markdown and Quarto documents now renders as
+  formatted HTML. Before, the heading lines appeared as raw HTML text.
+
+## Documentation
+
+* The vignette describes the new solver details, its comparison table was
+  recomputed with this version, and the right-triangular and uniform examples
+  were corrected to match what the package now fits.
+
+## Tests
+
+* New unit tests: COBYLA within 2% of the exact optimum on an
+  infinite-variance Pareto sample at `h = 4`; COBYLA and GLOBAL equal to the
+  exact optimum on tied data; the new range check in `strata.distr()`;
+  COBYLA equal to the exact optimum on a two-sided heavy-tailed sample.
+
+---
+
 # stratifyR 2.0-2  (2026-10-14)
 
 ## New solver
