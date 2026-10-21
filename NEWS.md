@@ -1,3 +1,14 @@
+# stratifyR (development version)
+
+## Shiny app
+
+* Drop-down lists (built-in datasets and data columns) now have a solid
+  background, so every option is readable, not only the first one. Long
+  lists scroll, and the option under the mouse is highlighted.
+* Long dashes in the app's labels and text were replaced with plain hyphens.
+
+---
+
 # stratifyR 2.0-3  (2026-10-16)
 
 A robustness release for very heavy-tailed populations, found with a 20-seed
