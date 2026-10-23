@@ -565,7 +565,7 @@ plot.strata <- function(x,
   }
 
   ttl <- main %||% sprintf(
-    "3D Density Ribbon  --  stratifyR 2.0<br><sup>H=%d, n=%d, dist=%s</sup>",
+    "3D Density Ribbon  --  stratifyR 2.0<br><sup>L=%d, n=%d, dist=%s</sup>",
     H, x$n, distr)
   fig |> plotly::layout(
     title  = list(text = ttl, font = list(size = 14)),

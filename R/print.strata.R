@@ -16,7 +16,7 @@ print.strata <- function(x, ...) {
 
   cat("-- stratifyR 2.0 -- Optimal Stratification Results ------------------\n")
   cat(sprintf("  Distribution : %s\n",    x$distr))
-  cat(sprintf("  Strata (H)   : %d\n",    H))
+  cat(sprintf("  Strata (L)   : %d\n",    H))
   cat(sprintf("  Sample size  : n = %d",  x$n))
   if (!is.null(x$N) && !is.na(x$N)) cat(sprintf(",  N = %d", x$N))
   cat("\n")

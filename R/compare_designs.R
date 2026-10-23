@@ -210,7 +210,7 @@ print.compare_designs <- function(x, digits = 6, ...) {
 
   cat("\n")
   cat("  -- Design Efficiency Comparison ------------------------------\n")
-  cat(sprintf("     H = %d strata   |   n = %d   |   S^2 = %s\n\n",
+  cat(sprintf("     L = %d strata   |   n = %d   |   S^2 = %s\n\n",
               x$H, x$n, formatC(x$S2, format = "g", digits = digits)))
 
   cat("  Design                  V(ybar)              SE(ybar)    DEFF\n")

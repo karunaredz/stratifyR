@@ -6,6 +6,15 @@
   background, so every option is readable, not only the first one. Long
   lists scroll, and the option under the mouse is highlighted.
 * Long dashes in the app's labels and text were replaced with plain hyphens.
+* The number of strata is now written as L (as in Reddy & Khan, 2020) instead
+  of H in the app's labels, formulas, tables and plots. The "H Selector" tab is
+  now called "Strata Count".
+
+## Printed output
+
+* `print()` for `strata` objects, `print()` for `compare_designs` objects and
+  the 3D plot title now label the number of strata as L. The `H` element of
+  the `compare_designs` object is unchanged, so existing code still works.
 
 ---
 
