@@ -37,15 +37,15 @@ library(triangle)
 
 **Title** Optimal Stratification of Univariate Populations
 
-**Version** 2.0-3
+**Version** 2.0-4
 
-**Date** 2026-10-14
+**Date** 2026-10-24
 
 **Author** Karuna G. Reddy, M.G.M. Khan
 
 **Maintainer** Karuna G. Reddy \<karuna.reddy@auckland.ac.nz\>
 
-**Description** This implements the stratification of univariate populations under stratified sampling designs using the method of Khan et al. (2002) <https://doi.org/10.1177/0008068320020518>, Khan et al. (2008) <https://www150.statcan.gc.ca/n1/pub/12-001-x/2008002/article/10761-eng.pdf> and Khan et al. (2015) <https://doi.org/10.1080/02664763.2015.1018674>. It determines the Optimum Strata Boundaries (OSB) and Optimum Sample Sizes (OSS) for the study variable, $y$, using the best-fit frequency distribution of a survey variable (if data is available) or a hypothetical distribution (if data is not available). The method formulates the problem of determining the OSB as mathematical programming problem which is solved by using a dynamic programming technique. Version 2.0 adds three further solvers (COBYLA, GLOBAL and EXACT), described in Section 7. If a dataset of the population is available to the surveyor, the method estimates its best-fit distribution and determines the OSB and OSS under Neyman allocation directly. When the dataset is not available, stratification is made based on the assumption that the values of the study variable, $y$, are available as hypothetical realizations of proxy values of $y$ from recent surveys. Thus, it requires certain distributional assumptions about the study variable. At present, it handles stratification for the populations where the study variable follows a continuous distribution, namely, Pareto, Triangular, Right-triangular, Weibull, Gamma, Exponential, Uniform, Normal, Log-normal and Cauchy distributions. In this vignette, the two major functionalities in the package are applied to a number of real and simulated populations and to some  hypothetical populations. 
+**Description** This implements the stratification of univariate populations under stratified sampling designs using the method of Khan et al. (2002) <https://doi.org/10.1177/0008068320020518>, Khan et al. (2008) <https://www150.statcan.gc.ca/n1/pub/12-001-x/2008002/article/10761-eng.pdf> and Khan et al. (2015) <https://doi.org/10.1080/02664763.2015.1018674>. It determines the Optimum Strata Boundaries (OSB) and Optimum Sample Sizes (OSS) for the study variable, $y$, using the best-fit frequency distribution of a survey variable (if data is available) or a hypothetical distribution (if data is not available). The method formulates the problem of determining the OSB as mathematical programming problem which is solved by using a dynamic programming technique. Version 2.0 adds three further solvers (COBYLA, GLOBAL and EXACT), described in Section 7, and version 2.0-4 adds two options of the EXACT solver, for the full variance with the finite population correction and for a take-all top stratum. If a dataset of the population is available to the surveyor, the method estimates its best-fit distribution and determines the OSB and OSS under Neyman allocation directly. When the dataset is not available, stratification is made based on the assumption that the values of the study variable, $y$, are available as hypothetical realizations of proxy values of $y$ from recent surveys. Thus, it requires certain distributional assumptions about the study variable. At present, it handles stratification for the populations where the study variable follows a continuous distribution, namely, Pareto, Triangular, Right-triangular, Weibull, Gamma, Exponential, Uniform, Normal, Log-normal and Cauchy distributions. In this vignette, the two major functionalities in the package are applied to a number of real and simulated populations and to some  hypothetical populations. 
 
 **License** GPL (>= 3)
 
@@ -122,6 +122,8 @@ For a fixed sample size $n$, minimizing the expression of the right hand side of
 \begin{eqnarray}
 \sum_{h=1}^{L} W_{h}S_{h} \tag{3}
 \end{eqnarray}
+
+The quantity (3) is called the objective function. When the sample is a large part of the population, the finite population correction can also be included, by using the options described in the section *Full variance and a take-all stratum*.
 
 If $f(y)$ is known and integrable, the stratum weight $(W_{h})$, stratum variance $(S_{h}^{2})$ and stratum mean $(\mu_{h})$ can be obtained as a function of the boundary points $y_{h}$ and $y_{h-1}$ by using the following expressions:
 \begin{eqnarray}\label{stratumweight}
@@ -441,7 +443,7 @@ The solver is run from several starting points (argument `n_starts`, default 20)
 
 ## The EXACT Method (`method = "exact"`)
 
-When you have every value of the stratification variable, sorting them shows that a set of strata is just a way of cutting the sorted list into $h$ consecutive pieces. `method = "exact"` tries every such cut, using the dynamic programming idea of Section 4 so that this stays fast, and returns the cut with the smallest `WhShTot`. In other words, no other choice of boundaries for these data can give a smaller Neyman cost. Each stratum keeps at least two units, and units with the same value are always kept together.
+When you have every value of the stratification variable, sorting them shows that a set of strata is just a way of cutting the sorted list into $h$ consecutive pieces. `method = "exact"` tries every such cut, using the dynamic programming idea of Section 4 so that this stays fast, and returns the cut with the smallest `WhShTot`. In other words, no other choice of boundaries for these data can give a smaller value of the objective function. Each stratum keeps at least two units, and units with the same value are always kept together.
 
 In practice:
 
@@ -458,6 +460,7 @@ A few questions settle it:
 - *Is the design for this very frame?* Then `"exact"` gives the best boundaries for it, usually in seconds.
 - *Will the boundaries be reused, for example in later rounds of the survey or on an updated frame?* The default `"dp"` places the boundaries for the fitted distribution rather than for every detail of one dataset, so they tend to change less from one frame to the next. It is worth comparing its `WhShTot` with `"exact"`: a small difference means the fitted family describes your data well.
 - *Are you exploring, for example many values of $h$ or several variables?* Use `"cobyla"` for speed, then confirm the final choice with `"exact"` or `"dp"`.
+- *Is the sample a large part of the population, or are there a few very large units?* Use `"exact"` with `takeall = TRUE` (see *Full variance and a take-all stratum*), which gives the design with the smallest variance that is actually achieved.
 
 ## Application: Comparing Methods for `strata.distr`
 
@@ -536,7 +539,9 @@ Every call to `strata.data()` or `strata.distr()` returns an object of class `"s
 | `OSB` | the optimum strata boundaries; the last one is the top of the range |
 | `Nh`, `nh` | the number of population units and of sampled units in each stratum |
 | `Wh`, `Vh` | stratum weights and variances |
-| `WhShTot` | the Neyman cost $\sum_h W_h S_h$; smaller means a more precise design |
+| `WhShTot` | the objective function $\sum_h W_h S_h$; smaller means a more precise design |
+| `variance` | the variance of the estimated mean, with the finite population correction, for the final allocation |
+| `takeall` | the number of units in a take-all top stratum (0 if there is none) |
 | `method`, `distr` | the solver used and the fitted (or assumed) distribution |
 | `converged`, `optimality_gap`, `kkt_residuals` | checks on the solution, mainly for `"cobyla"` and `"global"` |
 
@@ -552,7 +557,7 @@ A unit whose value equals a boundary belongs to the stratum below it. The sample
 
 ## How many strata?
 
-Each extra stratum lowers the Neyman cost, but by less each time, and every stratum adds fieldwork and reporting effort. A quick way to choose $h$ is to compute `WhShTot` for a range of values with the fast solver and look for the point where the gains level off.
+Each extra stratum lowers the objective function, but by less each time, and every stratum adds fieldwork and reporting effort. A quick way to choose $h$ is to compute `WhShTot` for a range of values with the fast solver and look for the point where the gains level off.
 
 ```{r include=TRUE, fig.width=5, fig.height=3.5}
 h_values <- 2:7
@@ -562,7 +567,7 @@ round(cost_h, 1)
 round(100 * (1 - cost_h[-1] / cost_h[-length(cost_h)]), 1)   # % drop at each step
 plot(h_values, cost_h, type = "b", pch = 19,
      xlab = "Number of strata (h)", ylab = "WhShTot",
-     main = "Neyman cost by number of strata")
+     main = "Objective function by number of strata")
 ```
 
 For these data the cost falls by about 31% from two to three strata and by about 24% from three to four, after which each extra stratum gains less. Four strata is a sensible choice here. The **Strata count** tab of the app does the same calculation and marks the elbow for you.
@@ -590,6 +595,23 @@ c(equal_costs = sum(res$nh * ch), with_costs = sum(res_cost$nh * ch))   # field 
 ```
 
 With the same 400 interviews, the cost-aware design moves the sample towards the cheaper lower strata and needs noticeably less field effort. Its variance is a little higher than the Neyman design's, because Neyman allocation is the most precise choice for a fixed $n$; the cost-aware design is the better choice when the budget, rather than the sample size, is fixed.
+
+## Full variance and a take-all stratum
+
+The objective function $\sum_h W_h S_h$ ignores the finite population correction, and the Neyman allocation can ask for more units than a stratum holds. Both matter when the sample is a large part of the population, as here, where $n/N = 400/3{,}566 = 0.11$, or when a few very large units dominate the top of the range. Version 2.0-4 adds two options of the exact solver for these cases:
+
+- `fpc = TRUE` minimises the full variance of the estimated mean under Neyman allocation, including the finite population correction. The minimum is certified when `optimality_gap` is 0.
+- `takeall = TRUE` also lets the top stratum be sampled completely (a take-all stratum) when this gives a lower variance. Every size of the take-all stratum is tried, together with the other boundaries.
+
+```{r include=TRUE}
+res_fpc <- strata.data(expend, h = 4, n = 400, method = "exact", fpc = TRUE)
+res_ta  <- strata.data(expend, h = 4, n = 400, method = "exact", takeall = TRUE)
+c(objective = res$variance, fpc = res_fpc$variance, takeall = res_ta$variance)
+res_ta$takeall    # units in the take-all top stratum (0 if there is none)
+res_ta$nh
+```
+
+The element `variance` is the variance of the estimated mean, with the finite population correction, for the final allocation, so the three designs can be compared directly; the smallest value is the best design for this sample size. `summary()` also shows the take-all stratum and the variance when these options are used. Both options need the data, so they are available only with `method = "exact"` in `strata.data()`, and they cannot be combined with `cost = TRUE`.
 
 ## Plots
 
@@ -1338,7 +1360,7 @@ summary(res)
 
 # Summary of Method Comparison Across All Supported Distributions
 
-To compare the four solvers on the examples of Section 9, we ran `strata.data()` with $h = 3$ on the data used in each distribution section. Table 1 shows the Neyman cost $\sum W_h S_h$ (`WhShTot`) for each solver, and the gap of the DP cost above the exact optimum. The values were computed with **stratifyR** 2.0-3; the code to reproduce them is given after the table.
+To compare the four solvers on the examples of Section 9, we ran `strata.data()` with $h = 3$ on the data used in each distribution section. Table 1 shows the objective function $\sum W_h S_h$ (`WhShTot`) for each solver, and the gap of the DP cost above the exact optimum. The values were computed with **stratifyR** 2.0-3; the code to reproduce them is given after the table.
 
 ```{r echo=FALSE, message=FALSE}
 comparison_table <- data.frame(
@@ -1358,7 +1380,7 @@ comparison_table <- data.frame(
   check.names = FALSE
 )
 knitr::kable(comparison_table, align = "llrlrrrrr",
-             caption = "Table 1: Neyman cost (WhShTot) of the four solvers with h = 3 on the examples of Section 9. 'AIC family' is the distribution chosen by AIC, which the DP optimises. 'DP gap' is the DP cost above the exact optimum. Lower WhShTot means a more efficient design.")
+             caption = "Table 1: Objective function (WhShTot) of the four solvers with h = 3 on the examples of Section 9. 'AIC family' is the distribution chosen by AIC, which the DP optimises. 'DP gap' is the DP cost above the exact optimum. Lower WhShTot means a more efficient design.")
 ```
 
 Three points stand out.

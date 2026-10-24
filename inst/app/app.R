@@ -4,8 +4,6 @@
 #
 # Required packages:
 #   install.packages(c("shiny", "bslib", "DT", "plotly", "readxl"))
-#   install.packages("~/Desktop/strataVerse/stratifyR 2.0/stratifyR 2.0-3",
-#                    repos = NULL, type = "source")
 # ==============================================================================
 
 library(shiny)
@@ -16,8 +14,8 @@ library(stratifyR)
 # Version shown in the header badge, read from the installed package
 # (e.g. "2.0-2"), so it always matches the package that is running.
 .app_version <- tryCatch(utils::packageDescription("stratifyR")$Version,
-                         error = function(e) "2.0-3")
-if (is.null(.app_version) || is.na(.app_version)) .app_version <- "2.0-3"
+                         error = function(e) "2.0-4")
+if (is.null(.app_version) || is.na(.app_version)) .app_version <- "2.0-4"
 
 has_plotly  <- requireNamespace("plotly",  quietly = TRUE)
 has_readxl  <- requireNamespace("readxl",  quietly = TRUE)
@@ -1038,6 +1036,15 @@ ui <- page_sidebar(
           selected = "dp",
           selectize = FALSE),
 
+        # v2.0-4: options of the exact solver (data sources only)
+        conditionalPanel("input.solver == 'exact' && input.data_source != 'distr'",
+          checkboxInput("opt_fpc", "Minimise the full variance (with fpc)", value = FALSE),
+          checkboxInput("opt_takeall", "Allow a take-all top stratum", value = FALSE),
+          div(style = "font-size:0.75rem; color:#94A3B8; margin:-4px 0 6px 0;",
+            "Useful when n is a large part of N or a few units are very large. ",
+            "The take-all option tries every size of a fully sampled top stratum.")
+        ),
+
         div(style = "font-size:0.75rem; color:#94A3B8; margin-top:2px;",
           tags$strong("DP"), " - globally optimal on a fine grid for the fitted distribution. ",
           tags$strong("EXACT"), " - globally optimal for the data themselves (data sources only). ",
@@ -1432,12 +1439,14 @@ server <- function(input, output, session) {
               "global" = "Running DIRECT-L global search + local refinement…",
               "exact"  = "Running Dynamic Programming on the data…"))
 
-          res <- strata.data(
-            data   = y,
-            h      = h,
-            n      = n_samp,
-            method = method
-          )
+          # v2.0-4: fpc / takeall options of the exact solver
+          ex_opts <- list()
+          if (identical(method, "exact") &&
+              all(c("fpc", "takeall") %in% names(formals(strata.data))))
+            ex_opts <- list(fpc     = isTRUE(input$opt_fpc),
+                            takeall = isTRUE(input$opt_takeall))
+          res <- do.call(strata.data,
+                         c(list(data = y, h = h, n = n_samp, method = method), ex_opts))
         }
 
         shiny::incProgress(0.60, detail = "Computing sample allocations…")
@@ -1719,7 +1728,7 @@ server <- function(input, output, session) {
       # Metric strip (only when results exist)
       if (!is.null(res)) {
         gap_lbl <- if (!is.null(res$optimality_gap) && !is.na(res$optimality_gap))
-                     formatC(res$optimality_gap, format = "e", digits = 2) else "N/A (DP)"
+                     formatC(res$optimality_gap, format = "e", digits = 2) else "N/A"
         div(class = "metrics-row",
           div(class = "metric-card",
             div(class = "metric-value", nrow(res$h)),
@@ -1732,7 +1741,15 @@ server <- function(input, output, session) {
             div(class = "metric-label", "ΣWₕSₕ")),
           div(class = "metric-card",
             div(class = "metric-value", gap_lbl),
-            div(class = "metric-label", "Optimality gap"))
+            div(class = "metric-label", "Optimality gap")),
+          if (!is.null(res$variance) && is.finite(res$variance))
+            div(class = "metric-card",
+              div(class = "metric-value", formatC(res$variance, format = "e", digits = 3)),
+              div(class = "metric-label", "Variance (with fpc)")),
+          if (!is.null(res$takeall) && isTRUE(res$takeall > 0))
+            div(class = "metric-card",
+              div(class = "metric-value", res$takeall),
+              div(class = "metric-label", "Take-all units"))
         )
       },
 
@@ -4447,6 +4464,15 @@ server <- function(input, output, session) {
         col_name, h, n, mtd)
     }
 
+    # v2.0-4: add the fpc / takeall options of the exact solver to the call
+    if (identical(mtd, "exact") && input$data_source != "distr") {
+      opt_str <- paste0(
+        if (isTRUE(input$opt_fpc))     ",\n  fpc    = TRUE" else "",
+        if (isTRUE(input$opt_takeall)) ",\n  takeall = TRUE" else "")
+      if (nzchar(opt_str))
+        data_call <- sub("\n\\)$", paste0(opt_str, "\n)"), data_call)
+    }
+
     # ---- result annotation (if a run has been completed) --------------------
     result_block <- ""
     if (!is.null(res)) {
@@ -4470,6 +4496,10 @@ server <- function(input, output, session) {
         sprintf("# Total n         : %d\n", res$nhTot),
         sprintf("# ΣWhSh           : %.6f\n", res$WhShTot),
         sprintf("# V*(n)           : %.8f\n", res$WhShTot^2 / res$nhTot),
+        if (!is.null(res$variance) && is.finite(res$variance))
+          sprintf("# Variance (fpc)  : %.8f\n", res$variance) else "",
+        if (!is.null(res$takeall) && isTRUE(res$takeall > 0))
+          sprintf("# Take-all units  : %d\n", as.integer(res$takeall)) else "",
         "# Converged       : ", conv_txt, "\n",
         if (!is.na(res$optimality_gap) && is.finite(res$optimality_gap))
           sprintf("# Optimality gap  : %.4f%%\n", 100 * res$optimality_gap) else "",
