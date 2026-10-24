@@ -51,6 +51,17 @@
 #'   COBYLA.  Default \code{1e-9}.
 #' @param verbose Logical. Print per-start progress when
 #'   \code{method = "cobyla"}.  Default \code{FALSE}.
+#' @param fpc     Logical. With \code{method = "exact"} only. If \code{TRUE},
+#'   the solver minimises the full variance of the stratified mean under
+#'   Neyman allocation, including the finite population correction,
+#'   \eqn{V = (\sum W_h S_h)^2/n - \sum W_h S_h^2/N}, instead of the
+#'   objective function \eqn{\sum W_h S_h}. The minimum is certified when the
+#'   reported \code{optimality_gap} is 0. Default \code{FALSE}.
+#' @param takeall Logical. With \code{method = "exact"} only. If \code{TRUE},
+#'   the top stratum may be made a take-all stratum, which is sampled
+#'   completely, when this gives a lower variance; the remaining sample is
+#'   allocated by Neyman allocation over the other strata. Implies
+#'   \code{fpc = TRUE}. Default \code{FALSE}.
 #'
 #' @return An object of class \code{"strata"} (same structure as
 #'   \strong{stratifyR} 1.x), with the following additional slots useful for
@@ -62,6 +73,11 @@
 #'     \item{\code{method}}{Solver used.}
 #'     \item{\code{exact_full}}{For \code{method = "exact"}: \code{TRUE} if every
 #'       possible cut point was searched.}
+#'     \item{\code{variance}}{Variance of the stratified mean, with the finite
+#'       population correction, for the final (integer) allocation.}
+#'     \item{\code{takeall}}{Number of units in the take-all top stratum
+#'       (0 if there is none).}
+#'     \item{\code{fpc}}{Logical: whether the full variance was minimised.}
 #'     \item{\code{data_internal}}{The input data vector (used by \code{plot.strata}).}
 #'   }
 #'
@@ -108,9 +124,16 @@ strata.data <- function(data,
                          n_starts = 20L,
                          max_iter = 2000L,
                          tol      = 1e-9,
-                         verbose  = FALSE) {
+                         verbose  = FALSE,
+                         fpc      = FALSE,
+                         takeall  = FALSE) {
 
   method <- match.arg(method)
+  full_var <- isTRUE(fpc) || isTRUE(takeall)
+  if (full_var && method != "exact")
+    stop("'fpc' and 'takeall' are available with method = \"exact\" only.")
+  if (full_var && isTRUE(cost))
+    stop("'fpc' and 'takeall' cannot be combined with cost = TRUE.")
 
   # ---- input validation ------------------------------------------------------
   if (missing(data)) stop("'data' must be specified")
@@ -162,6 +185,7 @@ strata.data <- function(data,
 
   # Store real-scale sorted data for empirical objective (cobyla + global methods)
   my_env$data_sorted_real <- sort(data_raw)
+  my_env$takeall_size <- 0L
 
   # ---- solve -----------------------------------------------------------------
   if (method == "cobyla") {
@@ -170,7 +194,10 @@ strata.data <- function(data,
   } else if (method == "global") {
     OSB <- .solve_global_data(h, n, N, my_env, max_iter, tol, verbose)
   } else if (method == "exact") {
-    OSB <- .solve_exact_data(data_raw, h, n, N, my_env)
+    OSB <- if (full_var)
+      .solve_exact_fpc(data_raw, h, n, N, my_env, takeall = isTRUE(takeall))
+    else
+      .solve_exact_data(data_raw, h, n, N, my_env)
   } else {
     OSB <- .solve_dp_data(h, n, N, my_env)
   }
@@ -236,6 +263,9 @@ strata.data <- function(data,
                converged       = converged,
                method          = method,
                exact_full      = attr(OSB, "exact_full"),
+               variance        = my_env$variance,
+               takeall         = my_env$takeall_size,
+               fpc             = full_var,
                data_internal   = data_raw)   # for plot.strata()
 
   result <- c(out1, out2, out3, out4)

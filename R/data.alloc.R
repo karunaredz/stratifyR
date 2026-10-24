@@ -63,6 +63,16 @@ data.alloc <- function(data, my_env)
     nh[i] <- n * nume[i] / adeno
   }
   
+  # -------- take-all top stratum (method = "exact", takeall = TRUE) --------
+  # v2.0-3: the top stratum is sampled completely and the rest of the sample is
+  # allocated over the other strata in the same way as above.
+  ta <- isTRUE(my_env$takeall_size > 0) && h >= 2L && Nh[h] < n
+  if (ta) {
+    rest <- seq_len(h - 1L)
+    nh[h] <- Nh[h]
+    nh[rest] <- (n - Nh[h]) * nume[rest] / sum(nume[rest])
+  }
+
   # -------- fix oversampling if any nh > Nh (your existing logic) --------
   realloc(h, x, nh, Nh, nume, my_env)
   nh <- my_env$nh
@@ -80,6 +90,15 @@ data.alloc <- function(data, my_env)
   # v2.0-2: whole-number sample sizes that add up to n (largest remainder)
   nh <- .round_alloc(nh, Nh)
   fh <- ifelse(Nh == 0, 0, round(nh / Nh, 2))   # guard: 0/0 -> 0 for empty strata
+
+  # v2.0-3: variance of the stratified mean (with fpc) for this allocation, and
+  # a warning when a sampled stratum gets fewer than 2 units
+  samp <- nh > 0 & nh < Nh
+  my_env$variance <- sum((Wh^2 * var * (1 / nh - 1 / Nh))[samp])
+  if (any(nh < 2 & Nh >= 2))
+    warning("At least one stratum has fewer than 2 sample units, so its variance ",
+            "cannot be estimated from the sample. Increase n or reduce h.",
+            call. = FALSE)
   my_env$out <- data.frame(nh = nh, Nh = Nh, fh = fh)
   
   my_env$deno  <- round(deno, 6)

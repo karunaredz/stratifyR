@@ -7,7 +7,7 @@
 strata.data(data, h, n, cost = FALSE, ch = NULL,
             method = c("dp", "cobyla", "global", "exact"),
             n_starts = 20L, max_iter = 2000L, tol = 1e-09,
-            verbose = FALSE)
+            verbose = FALSE, fpc = FALSE, takeall = FALSE)
 }
 \arguments{
 \item{data}{A vector of values of the survey variable y for
@@ -43,13 +43,30 @@ Default \code{2000L}.}
 \item{tol}{Numeric. Convergence tolerance for COBYLA. Default \code{1e-9}.}
 
 \item{verbose}{Logical. Print per-start progress. Default \code{FALSE}.}
+
+\item{fpc}{Logical. With \code{method = "exact"} only. If \code{TRUE}, the
+solver minimises the full variance of the stratified mean under Neyman
+allocation, including the finite population correction,
+\eqn{V = (\sum W_h S_h)^2/n - \sum W_h S_h^2/N}, instead of
+\eqn{\sum W_h S_h}. The minimum is certified when the reported
+\code{optimality_gap} is 0. Default \code{FALSE}.}
+
+\item{takeall}{Logical. With \code{method = "exact"} only. If \code{TRUE},
+the top stratum may be made a take-all stratum, sampled completely, when
+this gives a lower variance; the rest of the sample is allocated by Neyman
+allocation over the other strata. Implies \code{fpc = TRUE}.
+Default \code{FALSE}.}
 }
 \value{
 \code{strata.data} returns an object of class \code{"strata"} with the
 Optimum Strata Boundaries (OSB; the upper boundary of each stratum, the last
 being the largest data value),
 stratum weights (Wh), stratum variances (Vh), Optimum Sample Sizes
-(nh), stratum population sizes (Nh) and sampling fraction (fh).
+(nh), stratum population sizes (Nh) and sampling fraction (fh). It also
+contains \code{variance}, the variance of the stratified mean with the finite
+population correction for the final allocation, \code{takeall}, the number of
+units in a take-all top stratum (0 if there is none), and \code{fpc}, which
+records whether the full variance was minimised.
 }
 \description{
 This function takes in the univariate population data
@@ -69,6 +86,12 @@ data(sugarcane)
 dp    <- strata.data(sugarcane$Production, h = 4, n = 500)
 exact <- strata.data(sugarcane$Production, h = 4, n = 500, method = "exact")
 c(dp = dp$WhShTot, exact = exact$WhShTot)
+
+# minimise the full variance, allowing a take-all top stratum
+set.seed(1)
+x  <- (runif(2000)^(-1/2) - 1)          # heavy-tailed (Pareto II) population
+ta <- strata.data(x, h = 4, n = 200, method = "exact", takeall = TRUE)
+c(variance = ta$variance, takeall = ta$takeall)
 }
 \dontrun{
 data <- rweibull(1000, shape=2, scale = 1.5)

@@ -257,6 +257,13 @@ summary.strata <- function(object, ...) {
       cat(col_console("Stratum costs Ch: ", "key"), paste0("[", paste(ch, collapse = ", "), "]"), "\n", sep = "")
    }
    cat(col_console("Best-fit distribution: ", "key"), distr, "\n", sep = "")
+   if (isTRUE(object$takeall > 0))
+      cat(col_console("Take-all stratum: ", "key"),
+          sprintf("stratum %d (%s units, sampled completely)", h,
+                  format(object$takeall, big.mark = ",")), "\n", sep = "")
+   if (isTRUE(object$fpc) && !is.null(object$variance))
+      cat(col_console("Variance of the mean (with fpc): ", "key"),
+          formatC(object$variance, digits = 6, format = "g"), "\n", sep = "")
    
    cat(col_console("Parameter estimate(s):", "key"), "\n", sep = "")
    cat(fmt_params(try(if (!is.null(fit$estimate)) fit$estimate else fit$fit$estimate, silent = TRUE)), "\n", sep = "")

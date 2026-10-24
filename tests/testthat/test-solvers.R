@@ -124,3 +124,40 @@ test_that("strata.distr() stratum sizes add up to N", {
   expect_equal(sum(g$Nh), 20000)
   expect_equal(sum(g$nh), 1000)
 })
+
+test_that("exact with fpc = TRUE gives the minimum of the full variance (brute force)", {
+  set.seed(11)
+  x <- round(rgamma(30, shape = 2), 2); n <- 12; h <- 3
+  r <- suppressMessages(suppressWarnings(
+         strata.data(x, h = h, n = n, method = "exact", fpc = TRUE)))
+  xs <- sort(x); N <- length(xs)
+  cand <- which(diff(xs) > 0); cand <- cand[cand >= 2 & cand <= N - 2]
+  best <- Inf
+  for (cb in utils::combn(cand, h - 1, simplify = FALSE)) {
+    idx <- c(0, cb, N); Nh <- diff(idx); if (any(Nh < 2)) next
+    S <- mapply(function(a, b) stats::sd(xs[(a + 1):b]), idx[-(h + 1)], idx[-1])
+    W <- Nh / N
+    best <- min(best, sum(W * S)^2 / n - sum(W * S^2) / N)
+  }
+  b <- head(as.numeric(r$OSB), -1)
+  g <- findInterval(xs, b, left.open = TRUE) + 1
+  W <- tabulate(g, h) / N; S <- sapply(1:h, function(k) stats::sd(xs[g == k]))
+  expect_equal(sum(W * S)^2 / n - sum(W * S^2) / N, best, tolerance = 1e-10)
+  expect_true(is.na(r$optimality_gap) || r$optimality_gap < 1e-8)
+})
+
+test_that("takeall = TRUE samples the top stratum completely and lowers the variance", {
+  set.seed(5)
+  x <- runif(3000)^(-1/2) - 1                     # Pareto II, shape 2
+  a <- suppressMessages(suppressWarnings(strata.data(x, h = 4, n = 300, method = "exact")))
+  t <- suppressMessages(suppressWarnings(
+         strata.data(x, h = 4, n = 300, method = "exact", takeall = TRUE)))
+  expect_equal(sum(t$nh), 300)
+  if (t$takeall > 0) expect_equal(t$nh[4], t$Nh[4])
+  expect_lte(t$variance, a$variance * (1 + 1e-8))
+})
+
+test_that("fpc and takeall are only for method = 'exact'", {
+  expect_error(strata.data(rexp(200), h = 3, n = 50, method = "cobyla", fpc = TRUE),
+               "exact")
+})

@@ -2,7 +2,7 @@ Package: stratifyR
 Type: Package
 Title: Optimal Stratification of Univariate Populations
 Version: 2.0-3
-Date: 2026-10-16
+Date: 2026-10-24
 Authors@R: c(
     person("Karuna G.", "Reddy",
            email   = "karuna.reddy@auckland.ac.nz",
