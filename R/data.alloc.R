@@ -64,7 +64,7 @@ data.alloc <- function(data, my_env)
   }
   
   # -------- take-all top stratum (method = "exact", takeall = TRUE) --------
-  # v2.0-3: the top stratum is sampled completely and the rest of the sample is
+  # v2.0-4: the top stratum is sampled completely and the rest of the sample is
   # allocated over the other strata in the same way as above.
   ta <- isTRUE(my_env$takeall_size > 0) && h >= 2L && Nh[h] < n
   if (ta) {
@@ -91,7 +91,7 @@ data.alloc <- function(data, my_env)
   nh <- .round_alloc(nh, Nh)
   fh <- ifelse(Nh == 0, 0, round(nh / Nh, 2))   # guard: 0/0 -> 0 for empty strata
 
-  # v2.0-3: variance of the stratified mean (with fpc) for this allocation, and
+  # v2.0-4: variance of the stratified mean (with fpc) for this allocation, and
   # a warning when a sampled stratum gets fewer than 2 units
   samp <- nh > 0 & nh < Nh
   my_env$variance <- sum((Wh^2 * var * (1 / nh - 1 / Nh))[samp])

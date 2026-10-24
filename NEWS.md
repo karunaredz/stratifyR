@@ -1,8 +1,4 @@
-# stratifyR 2.0-3  (2026-10-24)
-
-A robustness release for very heavy-tailed populations, found with a 20-seed
-repeat of the simulation study. It also adds the full-variance and take-all
-options of the exact solver.
+# stratifyR 2.0-4  (2026-10-24)
 
 ## Solvers
 
@@ -16,6 +12,41 @@ options of the exact solver.
   units in business and farm surveys; every size of take-all stratum is tried.
   Both options are for data (`strata.data()`) and cannot be combined with
   `cost = TRUE`.
+
+## Output
+
+* `strata` objects from `strata.data()` have three new elements: `variance`
+  (the variance of the stratified mean, with the finite population correction,
+  for the final allocation), `takeall` (the size of the take-all stratum, 0 if
+  none) and `fpc`. `summary()` shows the take-all stratum and the variance when
+  these options are used.
+* `strata.data()` now warns when a stratum gets fewer than 2 sample units.
+
+## Shiny app
+
+* Drop-down lists (built-in datasets and data columns) now have a solid
+  background, so every option is readable, not only the first one. Long
+  lists scroll, and the option under the mouse is highlighted.
+* Long dashes in the app's labels and text were replaced with plain hyphens.
+* The number of strata is now written as L (as in Reddy & Khan, 2020) instead
+  of H in the app's labels, formulas, tables and plots. The "H Selector" tab is
+  now called "Strata Count".
+
+## Printed output
+
+* `print()` for `strata` objects, `print()` for `compare_designs` objects and
+  the 3D plot title now label the number of strata as L. The `H` element of
+  the `compare_designs` object is unchanged, so existing code still works.
+
+---
+
+# stratifyR 2.0-3  (2026-10-16)
+
+A robustness release for very heavy-tailed populations, found with a 20-seed
+repeat of the simulation study.
+
+## Solvers
+
 * `method = "cobyla"` on data: one of the starting points now comes from a
   quick, coarse exact search (dynamic programming over about 400 quantile cut
   points, a few milliseconds). On infinite-variance samples such as a Pareto
@@ -47,31 +78,6 @@ options of the exact solver.
   answer in that case (the final refinement improves it anyway).
 * `method = "exact"`: when very large data are thinned to a candidate set,
   the smallest and largest values are now always kept.
-
-## Output
-
-* `strata` objects from `strata.data()` have three new elements: `variance`
-  (the variance of the stratified mean, with the finite population correction,
-  for the final allocation), `takeall` (the size of the take-all stratum, 0 if
-  none) and `fpc`. `summary()` shows the take-all stratum and the variance when
-  these options are used.
-* `strata.data()` now warns when a stratum gets fewer than 2 sample units.
-
-## Shiny app
-
-* Drop-down lists (built-in datasets and data columns) now have a solid
-  background, so every option is readable, not only the first one. Long
-  lists scroll, and the option under the mouse is highlighted.
-* Long dashes in the app's labels and text were replaced with plain hyphens.
-* The number of strata is now written as L (as in Reddy & Khan, 2020) instead
-  of H in the app's labels, formulas, tables and plots. The "H Selector" tab is
-  now called "Strata Count".
-
-## Printed output
-
-* `print()` for `strata` objects, `print()` for `compare_designs` objects and
-  the 3D plot title now label the number of strata as L. The `H` element of
-  the `compare_designs` object is unchanged, so existing code still works.
 
 ## Distribution fitting
 

@@ -107,7 +107,7 @@
   OSB
 }
 # =============================================================================
-# Exact dynamic programming for the full Neyman variance (v2.0-3)
+# Exact dynamic programming for the full Neyman variance (v2.0-4)
 #
 # method = "exact" with fpc = TRUE and/or takeall = TRUE.
 #
