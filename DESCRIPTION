@@ -1,8 +1,8 @@
 Package: stratifyR
 Type: Package
 Title: Optimal Stratification of Univariate Populations
-Version: 2.0-4
-Date: 2026-10-24
+Version: 2.1-0
+Date: 2026-11-12
 Authors@R: c(
     person("Karuna G.", "Reddy",
            email   = "karuna.reddy@auckland.ac.nz",
@@ -29,8 +29,9 @@ Description: Determines Optimum Strata Boundaries (OSB) and Optimum Sample
     allocation with unequal per-stratum costs, a design-efficiency comparison
     (compare_designs), two- and three-dimensional and interactive
     visualisations, solution-quality diagnostics (a Cauchy-Schwarz optimality
-    gap and KKT first-order residuals for the derivative-free solvers) and a
-    self-contained 'shiny' application, while remaining backward compatible
+    gap and KKT first-order residuals for the derivative-free solvers),
+    accessor functions for the results and a self-contained 'shiny'
+    application, while remaining backward compatible
     with the strata.data() and strata.distr() interface of version 1.x.  The
     methodology follows Khan et al. (2008)
     <https://www150.statcan.gc.ca/n1/pub/12-001-x/2008002/article/10761-eng.pdf>,

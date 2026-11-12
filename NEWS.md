@@ -1,3 +1,52 @@
+# stratifyR 2.1-0  (2026-11-12)
+
+## New functions
+
+* Accessor functions, so results can be used without knowing how the objects
+  are built: `boundaries()` (the cut points, or the whole range with
+  `ends = TRUE`), `allocation()` (one row per stratum: lower and upper
+  boundary, Nh, Wh, Sh, WhSh, nh and fh), `objective()` (the objective
+  function sum(W_h S_h)), `variance()` (the variance of the estimated mean,
+  with the finite population correction) and `fitted_distribution()`.
+  `as.data.frame()` works on `strata` objects, and `as.data.frame()` and
+  `objective()` work on `compare_designs()` results.
+* `variance()` also works for results of `strata.distr()`, which did not
+  store the variance before.
+
+## Changes
+
+* `summary()` now returns an object of class `summary.strata` and prints
+  nothing itself. Printing it (or calling `summary()` at the console) shows
+  the same table as before, and in R Markdown it gives the same styled table.
+  `as.data.frame(summary(res))` gives the table as a data frame; before, the
+  data frame was returned by `summary()` itself, so `print(summary(res))`
+  showed the table twice.
+* `strata.data()`, `strata.distr()` and `compare_designs()` check all their
+  arguments before any fitting and stop with a message that names the
+  argument and says what is expected. Before, some bad inputs gave errors from
+  deep inside the solvers (for example `h = 1`), and some ran without
+  complaint (an unknown distribution name, a negative standard deviation, a
+  sample size larger than N).
+* Results now also keep the unrounded stratum values (`stratum_full`,
+  `objective_full`), which `allocation()` and `objective()` use. The rounded
+  elements `Wh`, `Vh`, `WhSh` and `WhShTot` are unchanged, so existing code
+  gives the same output.
+* The progress note "The program is running..." is now a message, so
+  `suppressMessages()` turns it off.
+
+## Fixes
+
+* A valid call no longer gives "NaNs produced" warnings. They came from the
+  harmless trial values that the optimiser tries while refitting the
+  distribution on the scale of the data.
+
+## Documentation
+
+* The help index lists only the user-facing functions and the data sets; the
+  internal helpers are marked as internal. All titles are in sentence case.
+* The vignette and the R code exported by the Shiny app use the new accessor
+  functions.
+
 # stratifyR 2.0-4  (2026-10-24)
 
 ## Solvers
