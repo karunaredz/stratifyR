@@ -4,11 +4,12 @@
 
 #' Print Method for Stratified Survey Design Objects
 #'
-#' Prints a compact console summary of the stratification results.
-#' For a full table use \code{summary(object)}.
+#' Prints a compact console summary of the stratification results. For the full
+#' per-stratum table use \code{summary(x)}.
 #'
-#' @param x   A \code{"strata"} object.
-#' @param ...  Currently unused.
+#'
+#' @param x A \code{"strata"} object.
+#' @param ... Currently unused.
 #' @return Invisibly returns \code{x}.
 #' @export
 print.strata <- function(x, ...) {

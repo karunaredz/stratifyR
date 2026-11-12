@@ -159,6 +159,7 @@
 #'   b_dist    : optimal interior boundaries as distances from initval (length H-1)
 #'   objective : achieved objective value (sum Wh*Sh on scaled axis)
 #'   converged : logical
+#' @noRd
 .cobyla_run <- function(my_env,
                         H,
                         use_distr   = FALSE,

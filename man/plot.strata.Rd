@@ -10,8 +10,8 @@
   data = NULL,
   n_pts = 512L,
   alpha = 0.25,
-  palette = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F",
-    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F"),
+  palette = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948",
+    "#B07AA1", "#FF9DA7", "#9C755F"),
   main = NULL,
   show_info = TRUE,
   ...
@@ -47,6 +47,7 @@ the fitted density overlaid and the strata shaded; \code{"3d"} and
 \code{"interactive"} render \pkg{plotly} views of the Neyman cost surface.
 }
 \examples{
+
 \dontrun{
 set.seed(1); y <- rgamma(2000, shape = 2, rate = 0.5)
 res <- strata.data(y, h = 4, n = 400)
@@ -54,4 +55,5 @@ plot(res)
 plot(res, type = "3d")
 plot(res, type = "interactive")
 }
+
 }

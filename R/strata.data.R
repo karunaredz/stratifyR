@@ -13,106 +13,113 @@
 
 #' Stratification of Univariate Survey Population Using the Data
 #'
-#' Computes Optimum Strata Boundaries (OSB) and Optimum Sample Sizes (OSS)
-#' directly from a population dataset by (1) fitting the best-matching
-#' parametric distribution via AIC, (2) formulating the stratification
-#' problem as a Mathematical Programming Problem (MPP), and (3) solving it
-#' with the original Dynamic Programming (DP) technique (default) or one of
-#' three alternatives.
+#' This function takes in the univariate population data (argument \code{data})
+#' and a fixed sample size (n) to compute the optimum stratum boundaries (OSB)
+#' for a given number of strata (L), optimum sample sizes (nh), etc. directly
+#' from the data. The main idea used is from Khan et al (2008) whereby the
+#' problem of stratification is formulated into a Mathematical Programming
+#' Problem (MPP) using the best-fit frequency distribution and its parameters
+#' estimated from the data. This MPP is then solved for the OSB using a Dynamic
+#' Programming (DP) solution procedure.
 #'
-#' The default solver (\code{method = "dp"}) uses the original Dynamic
-#' Programming grid search, which is globally optimal on a 1,000-point grid
-#' for the \emph{fitted} distribution. \code{method = "exact"} runs Dynamic
-#' Programming on the data themselves and returns the partition with the
-#' smallest empirical Neyman cost over all partitions with at least two units
-#' per stratum. \code{method = "cobyla"} (multi-start COBYLA and BOBYQA) and
-#' \code{method = "global"} (DIRECT-L followed by local refinement) are fast
-#' continuous searches on the empirical objective.
 #'
-#' @param data    A numeric vector containing every unit of the survey
-#'   population (the stratification variable \eqn{y}).
-#' @param h       Integer. Number of strata (\eqn{h \geq 2}).
-#' @param n       Integer. Fixed total sample size.
-#' @param cost    Logical. \code{FALSE} (default) for equal stratum costs.
-#'   Set \code{TRUE} and supply \code{ch} for cost-aware Neyman allocation.
-#' @param ch      Numeric vector of length \code{h}. Per-stratum sampling
-#'   costs; required when \code{cost = TRUE}.
-#' @param method  Character. \code{"dp"} (default) is the original Dynamic
-#'   Programming solver on the fitted distribution; \code{"exact"} is Dynamic
-#'   Programming on the data (exact for the data; when there are more than
-#'   20,000 distinct cut points it searches 20,000 cut points spread evenly in
-#'   rank, see \code{options(stratifyR.exact_max_cand)}); \code{"cobyla"} and
-#'   \code{"global"} are fast continuous solvers on the empirical objective.
-#' @param n_starts Integer. Number of random restarts for COBYLA
-#'   (ignored when \code{method = "dp"}).  Default \code{20L}.
+#' @param data A vector of values of the survey variable y for which the OSB
+#' are determined.
+#' @param h A numeric: denotes the number of strata to be created.
+#' @param n A numeric: denotes a fixed total sample size.
+#' @param cost A logical: has default cost=FALSE. If it is a stratum-cost
+#' problem, cost=TRUE, with which, one must provide the Ch parameter.
+#' @param ch A numeric: denotes a vector of stratum costs. When cost=FALSE, it
+#' has a default of NULL.
+#' @param method Character. Optimisation method. \code{"dp"} (default) is the
+#' original Dynamic Programming solver, globally optimal on a 1,000-point grid
+#' for the fitted distribution. \code{"exact"} runs Dynamic Programming on the
+#' data and returns the partition with the smallest empirical Neyman cost over
+#' all partitions with at least two units per stratum; with more than 20,000
+#' distinct cut points it searches 20,000 cut points spread evenly in rank (set
+#' \code{options(stratifyR.exact_max_cand = )} to change this). \code{"cobyla"}
+#' is a fast multi-start search (COBYLA and BOBYQA) on the empirical objective,
+#' and \code{"global"} is a DIRECT-L global search followed by local
+#' refinement.
+#' @param n_starts Integer. Number of random restarts for the COBYLA solver.
+#' Default \code{20L}. Used only by \code{"cobyla"}.
 #' @param max_iter Integer. Maximum function evaluations per COBYLA start.
-#'   Default \code{2000L}.
-#' @param tol     Numeric. Relative objective convergence tolerance for
-#'   COBYLA.  Default \code{1e-9}.
-#' @param verbose Logical. Print per-start progress when
-#'   \code{method = "cobyla"}.  Default \code{FALSE}.
-#' @param fpc     Logical. With \code{method = "exact"} only. If \code{TRUE},
-#'   the solver minimises the full variance of the stratified mean under
-#'   Neyman allocation, including the finite population correction,
-#'   \eqn{V = (\sum W_h S_h)^2/n - \sum W_h S_h^2/N}, instead of the
-#'   objective function \eqn{\sum W_h S_h}. The minimum is certified when the
-#'   reported \code{optimality_gap} is 0. Default \code{FALSE}.
+#' Default \code{2000L}.
+#' @param tol Numeric. Convergence tolerance for COBYLA. Default \code{1e-9}.
+#' @param verbose Logical. Print per-start progress. Default \code{FALSE}.
+#' @param fpc Logical. With \code{method = "exact"} only. If \code{TRUE}, the
+#' solver minimises the full variance of the stratified mean under Neyman
+#' allocation, including the finite population correction, \eqn{V = (\sum W_h
+#' S_h)^2/n - \sum W_h S_h^2/N}, instead of \eqn{\sum W_h S_h}. The minimum is
+#' certified when the reported \code{optimality_gap} is 0. Default
+#' \code{FALSE}.
 #' @param takeall Logical. With \code{method = "exact"} only. If \code{TRUE},
-#'   the top stratum may be made a take-all stratum, which is sampled
-#'   completely, when this gives a lower variance; the remaining sample is
-#'   allocated by Neyman allocation over the other strata. Implies
-#'   \code{fpc = TRUE}. Default \code{FALSE}.
-#'
-#' @return An object of class \code{"strata"} (same structure as
-#'   \strong{stratifyR} 1.x), with the following additional slots useful for
-#'   \code{plot()}, \code{summary()}, and the OptiStrata ecosystem:
-#'   \describe{
-#'     \item{\code{optimality_gap}}{Cauchy-Schwarz fractional gap (COBYLA only).}
-#'     \item{\code{kkt_residuals}}{First-order KKT residuals at the solution.}
-#'     \item{\code{converged}}{Logical convergence flag.}
-#'     \item{\code{method}}{Solver used.}
-#'     \item{\code{exact_full}}{For \code{method = "exact"}: \code{TRUE} if every
-#'       possible cut point was searched.}
-#'     \item{\code{variance}}{Variance of the stratified mean, with the finite
-#'       population correction, for the final (integer) allocation.}
-#'     \item{\code{takeall}}{Number of units in the take-all top stratum
-#'       (0 if there is none).}
-#'     \item{\code{fpc}}{Logical: whether the full variance was minimised.}
-#'     \item{\code{data_internal}}{The input data vector (used by \code{plot.strata}).}
-#'   }
-#'
+#' the top stratum may be made a take-all stratum, sampled completely, when
+#' this gives a lower variance; the rest of the sample is allocated by Neyman
+#' allocation over the other strata. Implies \code{fpc = TRUE}. Default
+#' \code{FALSE}.
+#' @return \code{strata.data} returns an object of class \code{"strata"} with
+#' the Optimum Strata Boundaries (OSB; the upper boundary of each stratum, the
+#' last being the largest data value), stratum weights (Wh), stratum variances
+#' (Vh), Optimum Sample Sizes (nh), stratum population sizes (Nh) and sampling
+#' fraction (fh). It also contains \code{variance}, the variance of the
+#' stratified mean with the finite population correction for the final
+#' allocation, \code{takeall}, the number of units in a take-all top stratum (0
+#' if there is none), and \code{fpc}, which records whether the full variance
+#' was minimised.
+#' @author Karuna Reddy <karuna.reddy@@auckland.ac.nz>\cr MGM Khan
+#' <mgm.khan@@usp.ac.fj>
+#' @seealso \code{strata.distr}
 #' @examples
-#' \dontrun{
-#' data <- rweibull(1000, shape = 2, scale = 1.5)
-#' obj  <- strata.data(data, h = 4, n = 300)
-#' summary(obj)
-#' plot(obj)
-#' plot(obj, type = "3d")
-#' plot(obj, type = "interactive")
-#'
-#' # Use the fast COBYLA solver instead
-#' obj_cobyla <- strata.data(data, h = 4, n = 300, method = "cobyla")
-#' summary(obj_cobyla)
-#'
-#' # Real dataset
-#' data(anaemia)
-#' res <- strata.data(anaemia$Iron, h = 3, n = 350)
-#' summary(res)
-#' plot(res)
+#' 
+#' \donttest{
+#' data(sugarcane)
+#' dp    <- strata.data(sugarcane$Production, h = 4, n = 500)
+#' exact <- strata.data(sugarcane$Production, h = 4, n = 500, method = "exact")
+#' c(dp = dp$WhShTot, exact = exact$WhShTot)
+#' 
+#' # minimise the full variance, allowing a take-all top stratum
+#' set.seed(1)
+#' x  <- (runif(2000)^(-1/2) - 1)          # heavy-tailed (Pareto II) population
+#' ta <- strata.data(x, h = 4, n = 200, method = "exact", takeall = TRUE)
+#' c(variance = ta$variance, takeall = ta$takeall)
 #' }
-#'
-#' @seealso \code{\link{strata.distr}}, \code{\link{plot.strata}},
-#'   \code{\link{summary.strata}}
-#'
-#' @references
-#' Khan, M.G.M., Khan, E.A., Ahsan, M.J. (2002). An optimal multivariate
-#' stratified sampling design using dynamic programming.
-#' \emph{Applied Mathematics Letters}, \strong{15}(7), 838-844.
-#'
-#' Reddy, K.G. & Khan, M.G.M. (2018). Determining the Optimum Stratum
-#' Boundaries: An Analytical Approach.
-#' \emph{Australian and New Zealand Journal of Statistics}, \strong{60}(4),
-#' 437-454. \doi{10.1111/anzs.12244}
+#' \dontrun{
+#' data <- rweibull(1000, shape=2, scale = 1.5)
+#' hist(data)
+#' obj <- strata.data(data, h = 2, n=300)
+#' summary(obj)
+#' #-------------------------------------------------------------
+#' data(anaemia)
+#' Iron <- anaemia$Iron
+#' res <- strata.data(Iron, h = 2, n=350)
+#' summary(res)
+#' #-------------------------------------------------------------
+#' data(SHS) #Household Spending data from stratification package
+#' weight <- SHS$WEIGHT
+#' hist(weight); length(weight)
+#' res <- strata.data(weight, h = 2, n=500)
+#' summary(res)
+#' #-------------------------------------------------------------
+#' data(sugarcane)
+#' Production <- sugarcane$Production
+#' hist(Production)
+#' res <- strata.data(Production, h = 2, n=1000)
+#' summary(res)
+#' #-------------------------------------------------------------
+#' #The function be dynamically used to visualize the the strata boundaries,
+#' #for 2 strata, over the density (or observations) of the "mag" variable
+#' #from the quakes data (with purrr and ggplot2 packages loaded).
+#' output <- quakes %>%
+#'           pluck("mag") %>%
+#'           strata.data(h = 2, n = 300)
+#' quakes %>%
+#'       ggplot(aes(x = mag)) +
+#'       geom_density(fill = "blue", colour = "black", alpha = 0.3) +
+#'       geom_vline(xintercept = output$OSB, linetype = "dotted", color = "red")
+#' #-------------------------------------------------------------
+#' }
+#' 
 #'
 #' @export
 strata.data <- function(data,

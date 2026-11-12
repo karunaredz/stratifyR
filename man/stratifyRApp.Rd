@@ -19,8 +19,8 @@ Opens the \pkg{stratifyR} web interface in the default browser. The
 application gives no-code access to the package: users upload their own data
 (CSV or Excel) or select a built-in dataset, compute optimum stratum
 boundaries and sample sizes with the \code{"dp"}, \code{"cobyla"},
-\code{"global"} or \code{"exact"} solvers, compare design efficiencies, explore boundaries
-interactively, and download the results.
+\code{"global"} or \code{"exact"} solvers, compare design efficiencies,
+explore boundaries interactively, and download the results.
 }
 \details{
 The application needs \pkg{shiny}, \pkg{bslib} and \pkg{DT} to start; if any
@@ -28,14 +28,15 @@ of these is missing, \code{stratifyRApp()} stops with a short installation
 hint rather than a cryptic error. The optional packages \pkg{plotly},
 \pkg{readxl}, \pkg{ggplot2} and \pkg{stratification} add features
 (interactive 2D/3D and slider plots, Excel upload, and the
-Lavallee-Hidiroglou comparison). The app opens without them, and on launch it
-reports any that are not installed so nothing fails silently. To install
-everything the app can use:
-\preformatted{install.packages(c("shiny", "bslib", "DT",
-                   "plotly", "readxl", "ggplot2", "stratification"))}
+Lavallee-Hidiroglou comparison). The app opens without them, and on launch
+it reports any that are not installed so nothing fails silently. To install
+everything the app can use: \preformatted{install.packages(c("shiny",
+"bslib", "DT", "plotly", "readxl", "ggplot2", "stratification"))}
 }
 \examples{
+
 \dontrun{
 stratifyRApp()
 }
+
 }

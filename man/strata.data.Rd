@@ -4,35 +4,45 @@
 \alias{strata.data}
 \title{Stratification of Univariate Survey Population Using the Data}
 \usage{
-strata.data(data, h, n, cost = FALSE, ch = NULL,
-            method = c("dp", "cobyla", "global", "exact"),
-            n_starts = 20L, max_iter = 2000L, tol = 1e-09,
-            verbose = FALSE, fpc = FALSE, takeall = FALSE)
+strata.data(
+  data,
+  h,
+  n,
+  cost = FALSE,
+  ch = NULL,
+  method = c("dp", "cobyla", "global", "exact"),
+  n_starts = 20L,
+  max_iter = 2000L,
+  tol = 1e-09,
+  verbose = FALSE,
+  fpc = FALSE,
+  takeall = FALSE
+)
 }
 \arguments{
-\item{data}{A vector of values of the survey variable y for
-which the OSB are determined.}
+\item{data}{A vector of values of the survey variable y for which the OSB
+are determined.}
 
 \item{h}{A numeric: denotes the number of strata to be created.}
 
 \item{n}{A numeric: denotes a fixed total sample size.}
 
-\item{cost}{A logical: has default cost=FALSE. If it is a stratum-cost problem,
-cost=TRUE, with which, one must provide the Ch parameter.}
+\item{cost}{A logical: has default cost=FALSE. If it is a stratum-cost
+problem, cost=TRUE, with which, one must provide the Ch parameter.}
 
 \item{ch}{A numeric: denotes a vector of stratum costs. When cost=FALSE, it
 has a default of NULL.}
 
 \item{method}{Character. Optimisation method. \code{"dp"} (default) is the
-original Dynamic Programming solver, globally optimal on a 1,000-point grid for
-the fitted distribution. \code{"exact"} runs Dynamic Programming on the data and
-returns the partition with the smallest empirical Neyman cost over all
-partitions with at least two units per stratum; with more than 20,000 distinct
-cut points it searches 20,000 cut points spread evenly in rank (set
-\code{options(stratifyR.exact_max_cand = )} to change this).
-\code{"cobyla"} is a fast multi-start search (COBYLA and BOBYQA) on the
-empirical objective, and \code{"global"} is a DIRECT-L global search followed
-by local refinement.}
+original Dynamic Programming solver, globally optimal on a 1,000-point grid
+for the fitted distribution. \code{"exact"} runs Dynamic Programming on the
+data and returns the partition with the smallest empirical Neyman cost over
+all partitions with at least two units per stratum; with more than 20,000
+distinct cut points it searches 20,000 cut points spread evenly in rank (set
+\code{options(stratifyR.exact_max_cand = )} to change this). \code{"cobyla"}
+is a fast multi-start search (COBYLA and BOBYQA) on the empirical objective,
+and \code{"global"} is a DIRECT-L global search followed by local
+refinement.}
 
 \item{n_starts}{Integer. Number of random restarts for the COBYLA solver.
 Default \code{20L}. Used only by \code{"cobyla"}.}
@@ -46,41 +56,40 @@ Default \code{2000L}.}
 
 \item{fpc}{Logical. With \code{method = "exact"} only. If \code{TRUE}, the
 solver minimises the full variance of the stratified mean under Neyman
-allocation, including the finite population correction,
-\eqn{V = (\sum W_h S_h)^2/n - \sum W_h S_h^2/N}, instead of
-\eqn{\sum W_h S_h}. The minimum is certified when the reported
-\code{optimality_gap} is 0. Default \code{FALSE}.}
+allocation, including the finite population correction, \eqn{V = (\sum W_h
+S_h)^2/n - \sum W_h S_h^2/N}, instead of \eqn{\sum W_h S_h}. The minimum is
+certified when the reported \code{optimality_gap} is 0. Default
+\code{FALSE}.}
 
 \item{takeall}{Logical. With \code{method = "exact"} only. If \code{TRUE},
 the top stratum may be made a take-all stratum, sampled completely, when
 this gives a lower variance; the rest of the sample is allocated by Neyman
-allocation over the other strata. Implies \code{fpc = TRUE}.
-Default \code{FALSE}.}
+allocation over the other strata. Implies \code{fpc = TRUE}. Default
+\code{FALSE}.}
 }
 \value{
-\code{strata.data} returns an object of class \code{"strata"} with the
-Optimum Strata Boundaries (OSB; the upper boundary of each stratum, the last
-being the largest data value),
-stratum weights (Wh), stratum variances (Vh), Optimum Sample Sizes
-(nh), stratum population sizes (Nh) and sampling fraction (fh). It also
-contains \code{variance}, the variance of the stratified mean with the finite
-population correction for the final allocation, \code{takeall}, the number of
-units in a take-all top stratum (0 if there is none), and \code{fpc}, which
-records whether the full variance was minimised.
+\code{strata.data} returns an object of class \code{"strata"} with
+the Optimum Strata Boundaries (OSB; the upper boundary of each stratum, the
+last being the largest data value), stratum weights (Wh), stratum variances
+(Vh), Optimum Sample Sizes (nh), stratum population sizes (Nh) and sampling
+fraction (fh). It also contains \code{variance}, the variance of the
+stratified mean with the finite population correction for the final
+allocation, \code{takeall}, the number of units in a take-all top stratum (0
+if there is none), and \code{fpc}, which records whether the full variance
+was minimised.
 }
 \description{
-This function takes in the univariate population data
-(argument \code{data}) and a fixed sample size (n)
-to compute the optimum stratum boundaries (OSB) for a
-given number of strata (L), optimum sample sizes (nh),
-etc. directly from the data. The main idea used is from
-Khan et al (2008) whereby the problem of stratification
-is formulated into a Mathematical Programming Problem (MPP)
-using the best-fit frequency distribution and its parameters
-estimated from the data. This MPP is then solved for the
-OSB using a Dynamic Programming (DP) solution procedure.
+This function takes in the univariate population data (argument \code{data})
+and a fixed sample size (n) to compute the optimum stratum boundaries (OSB)
+for a given number of strata (L), optimum sample sizes (nh), etc. directly
+from the data. The main idea used is from Khan et al (2008) whereby the
+problem of stratification is formulated into a Mathematical Programming
+Problem (MPP) using the best-fit frequency distribution and its parameters
+estimated from the data. This MPP is then solved for the OSB using a Dynamic
+Programming (DP) solution procedure.
 }
 \examples{
+
 \donttest{
 data(sugarcane)
 dp    <- strata.data(sugarcane$Production, h = 4, n = 500)
@@ -129,10 +138,12 @@ quakes \%>\%
 #-------------------------------------------------------------
 }
 
+
 }
 \seealso{
 \code{strata.distr}
 }
 \author{
-Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan <mgm.khan@usp.ac.fj>
+Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan
+<mgm.khan@usp.ac.fj>
 }

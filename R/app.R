@@ -15,25 +15,22 @@
 #' \code{"global"} or \code{"exact"} solvers, compare design efficiencies,
 #' explore boundaries interactively, and download the results.
 #'
-#' @details
 #' The application needs \pkg{shiny}, \pkg{bslib} and \pkg{DT} to start; if any
 #' of these is missing, \code{stratifyRApp()} stops with a short installation
 #' hint rather than a cryptic error. The optional packages \pkg{plotly},
 #' \pkg{readxl}, \pkg{ggplot2} and \pkg{stratification} add features
 #' (interactive 2D/3D and slider plots, Excel upload, and the
-#' Lavallee-Hidiroglou comparison). The app opens without them, and on launch it
-#' reports any that are not installed so nothing fails silently. To install
-#' everything the app can use:
-#' \preformatted{install.packages(c("shiny", "bslib", "DT",
-#'                    "plotly", "readxl", "ggplot2", "stratification"))}
+#' Lavallee-Hidiroglou comparison). The app opens without them, and on launch
+#' it reports any that are not installed so nothing fails silently. To install
+#' everything the app can use: \preformatted{install.packages(c("shiny",
+#' "bslib", "DT", "plotly", "readxl", "ggplot2", "stratification"))}
 #'
 #' @param ... Additional arguments passed to \code{\link[shiny]{runApp}}, for
-#'   example \code{port} or \code{launch.browser}.
-#'
+#' example \code{port} or \code{launch.browser}.
 #' @return Called for its side effect (launches a Shiny app); returns
-#'   \code{NULL} invisibly.
-#'
+#' \code{NULL} invisibly.
 #' @examples
+#' 
 #' \dontrun{
 #' stratifyRApp()
 #' }

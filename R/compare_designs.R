@@ -12,59 +12,55 @@
 #   Neyman, J. (1934). JRSS 97, 558-625.
 # =============================================================================
 
-#' Compare Survey Design Efficiencies
+#' Compare survey design efficiencies
 #'
 #' Given a fitted \code{"strata"} object (from \code{\link{strata.data}} or
 #' \code{\link{strata.distr}}), computes and compares the variance of the
 #' sample mean under three designs for the \strong{same} total sample size
 #' \eqn{n}:
-#'
 #' \describe{
 #'   \item{SRS}{Simple random sampling without replacement (baseline).}
 #'   \item{Proportional}{Stratified sampling with \eqn{n_h \propto W_h}
 #'     (proportional allocation).}
 #'   \item{Neyman}{Stratified sampling with \eqn{n_h \propto W_h S_h}
-#'     (optimal/Neyman allocation) - the allocation used by \code{stratifyR}.}
+#'     (optimal/Neyman allocation), the allocation used by \code{stratifyR}.}
 #' }
 #'
 #' Design effects (DEFF) follow Kish (1965): \eqn{\mathrm{DEFF} = V_{\rm design}
-#' / V_{\rm SRS}}.  The \emph{equivalent SRS sample size} is the number of
+#' / V_{\rm SRS}}. The \emph{equivalent SRS sample size} is the number of
 #' observations an SRS design would need to match the precision of the Neyman
 #' design, and the \emph{cost saving} is the corresponding percentage reduction.
 #'
 #' @param object An object of class \code{"strata"}.
-#' @param n      Integer.  Total sample size.  Defaults to \code{object$nhTot}
-#'   (the value used when the stratification was run).
-#' @param ...    Currently unused.
-#'
+#' @param n Integer. Total sample size. Defaults to \code{object$nhTot} (the
+#'   value used when the stratification was run).
+#' @param x A \code{"compare_designs"} object.
+#' @param digits Integer. Number of significant digits used when printing.
+#' @param ... Currently unused.
 #' @return An object of class \code{"compare_designs"} (an invisibly-printed
 #'   list) with components:
-#'   \describe{
-#'     \item{\code{n}}{Total sample size used.}
-#'     \item{\code{H}}{Number of strata.}
-#'     \item{\code{S2}}{Estimated population variance \eqn{S^2}.}
-#'     \item{\code{V_within}}{Within-stratum variance component
-#'       \eqn{\sum W_h S_h^2}.}
-#'     \item{\code{V_srs, V_prop, V_opt}}{Variance of \eqn{\bar{y}} under
-#'       SRS, proportional, and Neyman designs.}
-#'     \item{\code{SE_srs, SE_prop, SE_opt}}{Corresponding standard errors.}
-#'     \item{\code{deff_prop, deff_opt}}{Design effects relative to SRS.}
-#'     \item{\code{n_srs_equiv}}{Equivalent SRS sample size for same precision
-#'       as Neyman design.}
-#'     \item{\code{pct_saving}}{Percentage sample-size saving of Neyman over
-#'       SRS.}
-#'     \item{\code{WhShTot}}{\eqn{\sum W_h S_h} (objective function value).}
-#'   }
-#'
+#' \describe{
+#'   \item{\code{n}}{Total sample size used.}
+#'   \item{\code{H}}{Number of strata.}
+#'   \item{\code{S2}}{Estimated population variance \eqn{S^2}.}
+#'   \item{\code{V_within}}{Within-stratum variance component
+#'     \eqn{\sum W_h S_h^2}.}
+#'   \item{\code{V_srs, V_prop, V_opt}}{Variance of \eqn{\bar{y}} under
+#'     SRS, proportional, and Neyman designs.}
+#'   \item{\code{SE_srs, SE_prop, SE_opt}}{Corresponding standard errors.}
+#'   \item{\code{deff_prop, deff_opt}}{Design effects relative to SRS.}
+#'   \item{\code{n_srs_equiv}}{Equivalent SRS sample size for same precision
+#'     as the Neyman design.}
+#'   \item{\code{pct_saving}}{Percentage sample-size saving of Neyman over SRS.}
+#'   \item{\code{WhShTot}}{\eqn{\sum W_h S_h} (objective function value).}
+#' }
+#' @seealso \code{\link{strata.data}}, \code{\link{strata.distr}}
 #' @examples
 #' \dontrun{
 #' res <- strata.data(data = anaemia$Iron, h = 3, n = 300)
 #' cd  <- compare_designs(res)
 #' cd
 #' }
-#'
-#' @seealso \code{\link{strata.data}}, \code{\link{strata.distr}}
-#'
 #' @export
 compare_designs <- function(object, ...) UseMethod("compare_designs")
 
@@ -205,6 +201,7 @@ compare_designs.strata <- function(object, n = NULL, ...) {
 # print method
 # =============================================================================
 
+#' @rdname compare_designs
 #' @export
 print.compare_designs <- function(x, digits = 6, ...) {
 
