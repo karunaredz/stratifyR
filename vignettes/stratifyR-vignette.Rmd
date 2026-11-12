@@ -490,9 +490,9 @@ res_glob_d <- strata.distr(h=3, initval=1.5, dist=33.2,
                 n=350, N=724, method="global")
 
 # Direct comparison of the three methods
-cat("DP     OSB:", round(res_dp_d$OSB, 3),   "  WhShTot:", res_dp_d$WhShTot, "\n")
-cat("COBYLA OSB:", round(res_cob_d$OSB, 3),  "  WhShTot:", res_cob_d$WhShTot, "\n")
-cat("GLOBAL OSB:", round(res_glob_d$OSB, 3), "  WhShTot:", res_glob_d$WhShTot, "\n")
+cat("DP     OSB:", round(boundaries(res_dp_d), 3),   "  WhShTot:", objective(res_dp_d), "\n")
+cat("COBYLA OSB:", round(boundaries(res_cob_d), 3),  "  WhShTot:", objective(res_cob_d), "\n")
+cat("GLOBAL OSB:", round(boundaries(res_glob_d), 3), "  WhShTot:", objective(res_glob_d), "\n")
 ```
 
 All three solvers minimise the same smooth objective here, and they give the same boundaries: the local refinement at the end of the DP moves its grid solution to the continuous optimum. COBYLA and GLOBAL take a fraction of a second, while the DP takes much longer.
@@ -512,10 +512,10 @@ res_exact_s <- strata.data(Iron, h=2, n=350, method="exact")
 summary(res_exact_s)
 
 # Direct comparison
-cat("DP     OSB:", round(res_dp_s$OSB, 3),    "  WhShTot:", res_dp_s$WhShTot, "\n")
-cat("COBYLA OSB:", round(res_cob_s$OSB, 3),   "  WhShTot:", res_cob_s$WhShTot, "\n")
-cat("GLOBAL OSB:", round(res_glob_s$OSB, 3),  "  WhShTot:", res_glob_s$WhShTot, "\n")
-cat("EXACT  OSB:", round(res_exact_s$OSB, 3), "  WhShTot:", res_exact_s$WhShTot, "\n")
+cat("DP     OSB:", round(boundaries(res_dp_s), 3),    "  WhShTot:", objective(res_dp_s), "\n")
+cat("COBYLA OSB:", round(boundaries(res_cob_s), 3),   "  WhShTot:", objective(res_cob_s), "\n")
+cat("GLOBAL OSB:", round(boundaries(res_glob_s), 3),  "  WhShTot:", objective(res_glob_s), "\n")
+cat("EXACT  OSB:", round(boundaries(res_exact_s), 3), "  WhShTot:", objective(res_exact_s), "\n")
 ```
 
 COBYLA, GLOBAL and EXACT reach the same minimum cost. Their printed boundaries can differ slightly, because any boundary that lies between the same two consecutive data values gives the same strata; EXACT reports the largest value in the lower stratum. The DP cost is slightly higher, because the DP optimises the fitted Weibull model rather than the data. The difference here is small (about 0.25%), which shows that the Weibull describes these data well.
@@ -532,41 +532,41 @@ summary(expend)
 
 ## What is in a result
 
-Every call to `strata.data()` or `strata.distr()` returns an object of class `"strata"`. Printing it gives a short overview, and `summary()` gives the full table. The pieces you will use most often are:
+Every call to `strata.data()` or `strata.distr()` returns an object of class `"strata"`. Printing it gives a short overview, and `summary()` gives the full table. The results are taken out of the object with these functions:
 
-| Element | Meaning |
+| Function | Returns |
 |---|---|
-| `OSB` | the optimum strata boundaries; the last one is the top of the range |
-| `Nh`, `nh` | the number of population units and of sampled units in each stratum |
-| `Wh`, `Vh` | stratum weights and variances |
-| `WhShTot` | the objective function $\sum_h W_h S_h$; smaller means a more precise design |
-| `variance` | the variance of the estimated mean, with the finite population correction, for the final allocation |
-| `takeall` | the number of units in a take-all top stratum (0 if there is none) |
-| `method`, `distr` | the solver used and the fitted (or assumed) distribution |
-| `converged`, `optimality_gap`, `kkt_residuals` | checks on the solution, mainly for `"cobyla"` and `"global"` |
+| `boundaries(res)` | the optimum strata boundaries (the $L - 1$ cut points); with `ends = TRUE` also the smallest and largest values |
+| `allocation(res)` | one row per stratum: the lower and upper boundary, $N_h$, $W_h$, $S_h$, $W_h S_h$, $n_h$ and $f_h$ |
+| `objective(res)` | the objective function $\sum_h W_h S_h$; smaller means a more precise design |
+| `variance(res)` | the variance of the estimated mean, with the finite population correction, for the final allocation |
+| `fitted_distribution(res)` | the fitted (or assumed) distribution and its parameters |
+| `summary(res)` | the summary table; `as.data.frame(summary(res))` gives it as a data frame |
+
+The printed result also shows the solver, whether it converged and, for `"cobyla"` and `"global"`, the optimality gap.
 
 ```{r include=TRUE}
 res <- strata.data(expend, h = 4, n = 400, method = "exact")
 res
-res$OSB
-res$nh
-sum(res$nh)    # the stratum sample sizes always add up to n
+boundaries(res)
+allocation(res)
+sum(allocation(res)$nh)    # the stratum sample sizes always add up to n
 ```
 
 A unit whose value equals a boundary belongs to the stratum below it. The sample sizes are whole numbers that add up to $n$ and never exceed the number of units in a stratum. If Neyman allocation asks for more units than a stratum has, that stratum is fully enumerated and the rest of the sample is shared among the other strata.
 
 ## How many strata?
 
-Each extra stratum lowers the objective function, but by less each time, and every stratum adds fieldwork and reporting effort. A quick way to choose $h$ is to compute `WhShTot` for a range of values with the fast solver and look for the point where the gains level off.
+Each extra stratum lowers the objective function, but by less each time, and every stratum adds fieldwork and reporting effort. A quick way to choose $h$ is to compute `objective()` for a range of values with the fast solver and look for the point where the gains level off.
 
 ```{r include=TRUE, fig.width=5, fig.height=3.5}
 h_values <- 2:7
 cost_h <- sapply(h_values, function(h)
-  strata.data(expend, h = h, n = 400, method = "cobyla")$WhShTot)
+  objective(strata.data(expend, h = h, n = 400, method = "cobyla")))
 round(cost_h, 1)
 round(100 * (1 - cost_h[-1] / cost_h[-length(cost_h)]), 1)   # % drop at each step
 plot(h_values, cost_h, type = "b", pch = 19,
-     xlab = "Number of strata (h)", ylab = "WhShTot",
+     xlab = "Number of strata (h)", ylab = "Objective function",
      main = "Objective function by number of strata")
 ```
 
@@ -590,8 +590,10 @@ If some strata are more expensive to survey, for example because large household
 ch <- c(1, 1, 2, 4)    # relative cost of one interview in each stratum
 res_cost <- strata.data(expend, h = 4, n = 400, method = "exact",
                         cost = TRUE, ch = ch)
-rbind(equal_costs = res$nh, with_costs = res_cost$nh)
-c(equal_costs = sum(res$nh * ch), with_costs = sum(res_cost$nh * ch))   # field cost
+nh_equal <- allocation(res)$nh
+nh_cost  <- allocation(res_cost)$nh
+rbind(equal_costs = nh_equal, with_costs = nh_cost)
+c(equal_costs = sum(nh_equal * ch), with_costs = sum(nh_cost * ch))   # field cost
 ```
 
 With the same 400 interviews, the cost-aware design moves the sample towards the cheaper lower strata and needs noticeably less field effort. Its variance is a little higher than the Neyman design's, because Neyman allocation is the most precise choice for a fixed $n$; the cost-aware design is the better choice when the budget, rather than the sample size, is fixed.
@@ -606,12 +608,13 @@ The objective function $\sum_h W_h S_h$ ignores the finite population correction
 ```{r include=TRUE}
 res_fpc <- strata.data(expend, h = 4, n = 400, method = "exact", fpc = TRUE)
 res_ta  <- strata.data(expend, h = 4, n = 400, method = "exact", takeall = TRUE)
-c(objective = res$variance, fpc = res_fpc$variance, takeall = res_ta$variance)
-res_ta$takeall    # units in the take-all top stratum (0 if there is none)
-res_ta$nh
+c(objective = variance(res), fpc = variance(res_fpc), takeall = variance(res_ta))
+a_ta <- allocation(res_ta)
+a_ta
+any(a_ta$nh == a_ta$Nh)    # TRUE if a stratum is sampled completely (take-all)
 ```
 
-The element `variance` is the variance of the estimated mean, with the finite population correction, for the final allocation, so the three designs can be compared directly; the smallest value is the best design for this sample size. `summary()` also shows the take-all stratum and the variance when these options are used. Both options need the data, so they are available only with `method = "exact"` in `strata.data()`, and they cannot be combined with `cost = TRUE`.
+`variance()` gives the variance of the estimated mean, with the finite population correction, for the final allocation, so the three designs can be compared directly; the smallest value is the best design for this sample size. For these data the two full-variance designs are the same, because no take-all stratum lowers the variance, so `any()` gives `FALSE`. `summary()` also shows the take-all stratum and the variance when these options are used. Both options need the data, so they are available only with `method = "exact"` in `strata.data()`, and they cannot be combined with `cost = TRUE`.
 
 ## Plots
 
@@ -1415,7 +1418,7 @@ pops$Cauchy <- Boston$black
 tab <- t(sapply(pops, function(d) {
   n <- min(500, floor(length(d) / 2))
   sapply(c("dp", "cobyla", "global", "exact"),
-         function(m) strata.data(d, h=3, n=n, method=m)$WhShTot)
+         function(m) objective(strata.data(d, h=3, n=n, method=m)))
 }))
 tab
 ```

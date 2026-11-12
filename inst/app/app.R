@@ -4516,7 +4516,9 @@ server <- function(input, output, session) {
     # ---- visualisation calls ------------------------------------------------
     viz_block <- paste0(
       "\n\n",
-      "summary(res)\n\n",
+      "summary(res)\n",
+      "boundaries(res)                     # optimum strata boundaries\n",
+      "allocation(res)                     # stratum and sample sizes\n\n",
       "plot(res)                           # 2D density + strata\n",
       "plot(res, type = \"3d\")              # 3D surface\n",
       "plot(res, type = \"interactive\")     # boundary explorer\n"
