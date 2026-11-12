@@ -11,7 +11,7 @@
 #     summary.strata().
 # =============================================================================
 
-#' Stratification of Univariate Survey Population Using the Data
+#' Stratify a univariate population using the data
 #'
 #' This function takes in the univariate population data (argument \code{data})
 #' and a fixed sample size (n) to compute the optimum stratum boundaries (OSB)

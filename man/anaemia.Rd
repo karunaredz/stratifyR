@@ -3,7 +3,7 @@
 \docType{data}
 \name{anaemia}
 \alias{anaemia}
-\title{Micronutrient data on Anaemia in Fiji}
+\title{Micronutrient data on anaemia in Fiji}
 \format{
 A population data frame with 724 rows on some of the key
 components collected in the survey. The variables are:

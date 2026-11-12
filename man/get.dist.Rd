@@ -2,8 +2,7 @@
 % Please edit documentation in R/get.dist.R
 \name{get.dist}
 \alias{get.dist}
-\title{Determine best-fit distribution
-Identify the best-fit distribution for a univariate numeric vector}
+\title{Find the best-fit distribution}
 \usage{
 get.dist(data, my_env)
 }
@@ -28,6 +27,6 @@ Returns a list with:
  - messages:named list of diagnostic messages per model (errors/warnings)
 }
 \description{
-Determine best-fit distribution
-Identify the best-fit distribution for a univariate numeric vector
+Identifies the best-fit distribution for a numeric vector, by AIC among the supported families.
 }
+\keyword{internal}

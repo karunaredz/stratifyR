@@ -6,7 +6,7 @@
 # inst/app/app.R and is located at run time with system.file().
 # =============================================================================
 
-#' Launch the stratifyR 2.0 Interactive Shiny Application
+#' Launch the stratifyR Shiny application
 #'
 #' Opens the \pkg{stratifyR} web interface in the default browser. The
 #' application gives no-code access to the package: users upload their own data

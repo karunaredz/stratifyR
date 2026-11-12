@@ -2,7 +2,7 @@
 # plot.strata.R  --  stratifyR 2.0
 # =============================================================================
 
-#' Plot Method for Stratified Survey Design Objects
+#' Plot a stratification
 #'
 #' Visualises a stratified design. The \code{"2d"} mode draws a histogram with
 #' the fitted density overlaid and the strata shaded; \code{"3d"} and

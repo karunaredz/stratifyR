@@ -2,7 +2,7 @@
 % Please edit documentation in R/print.strata.R
 \name{print.strata}
 \alias{print.strata}
-\title{Print Method for Stratified Survey Design Objects}
+\title{Print a stratification}
 \usage{
 \method{print}{strata}(x, ...)
 }

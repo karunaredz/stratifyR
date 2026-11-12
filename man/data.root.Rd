@@ -2,7 +2,7 @@
 % Please edit documentation in R/data.root.R
 \name{data.root}
 \alias{data.root}
-\title{Calculate the objective function value for a given (d, y)}
+\title{Objective function value of one stratum (data)}
 \usage{
 data.root(d, y, c, my_env)
 }
@@ -19,7 +19,11 @@ data.root(d, y, c, my_env)
 numeric: sqrt(objective) or -1 if branch is infeasible/invalid
 }
 \description{
+Calculates the value of the objective function for one stratum, given the remaining range d and the stratum width y.
+}
+\details{
 Used by the DP recurrences to evaluate the stratification objective at
 a specific remaining distance 'd' and first-stratum width 'y', given
 stratum cost 'c' and constants tucked in 'my_env.'
 }
+\keyword{internal}

@@ -2,8 +2,7 @@
 % Please edit documentation in R/distr.root.R
 \name{distr.root}
 \alias{distr.root}
-\title{Calculate the objective function value for a given (d, y) under a
-hypothesized distribution (scaled-data formulation)}
+\title{Objective function value of one stratum (distribution)}
 \usage{
 distr.root(d, y, c, my_env)
 }
@@ -21,6 +20,9 @@ and scaling constants ('initval', 'maxval', etc.)}
 numeric: sqrt(objective) or -1 if branch is infeasible/invalid
 }
 \description{
+Calculates the value of the objective function for one stratum under an assumed distribution, given the remaining range d and the stratum width y (on the scaled axis).
+}
+\details{
 Used by the DP recurrences in the "distribution-known" pathway. All
 distribution parameters are interpreted on the "scaled" axis
 (initval .. initval+dist), consistent with 'strata.distr()'.
@@ -29,3 +31,4 @@ distribution parameters are interpreted on the "scaled" axis
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 MGM Khan <khan_mg@usp.ac.fj>
 }
+\keyword{internal}

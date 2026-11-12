@@ -2,7 +2,7 @@
 % Please edit documentation in R/strata.distr.R
 \name{strata.distr}
 \alias{strata.distr}
-\title{Stratification of Univariate Survey Population Using the Distribution}
+\title{Stratify a univariate population using a distribution}
 \usage{
 strata.distr(
   h,

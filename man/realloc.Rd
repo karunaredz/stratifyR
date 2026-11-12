@@ -2,7 +2,7 @@
 % Please edit documentation in R/realloc.R
 \name{realloc}
 \alias{realloc}
-\title{To re-allocate the stratum sample sizes (nh)}
+\title{Reallocate the stratum sample sizes}
 \usage{
 realloc(h, x, nh, Nh, nume, my_env)
 }
@@ -24,6 +24,9 @@ from earlier opeartions through various other functions}
 \code{} calculates and presents the new re-allocate stratum samples
 }
 \description{
+Reallocates the stratum sample sizes (nh) when a stratum is asked for more units than it has.
+}
+\details{
 This function re-calculates or re-allocate the stratum sample sizes 
 (nh) after it has already been initially allocated via Neyman
 allocation. This is applied to resolve the problem of oversampling 
@@ -33,3 +36,4 @@ in one or more of the strata.
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 MGM Khan <khan_mg@usp.ac.fj>
 }
+\keyword{internal}

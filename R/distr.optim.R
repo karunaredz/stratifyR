@@ -1,5 +1,6 @@
-#' To implement the Dynamic Programming (DP) solution procedure on the stratification
-#' problem presented in the form of a Mathematical Programming Problem (MPP)
+#' Dynamic programming for a distribution
+#'
+#' Carries out the dynamic programming (DP) solution of the stratification problem, written as a mathematical programming problem (MPP), for an assumed distribution.
 #'
 #' This function uses the Dynamic Programming (DP) solution procedure in solving the
 #' objective function for the univariate stratification problem. It calculates
@@ -21,6 +22,7 @@
 #'
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan <khan_mg@usp.ac.fj>
 #'
+#' @keywords internal
 # distr.optim.R  (rewritten: safe bounds, window clamp, guarded indexing)
 distr.optim <- function(k, n, incf, minYk, maxYk, isFirstRun = TRUE, my_env)
 {

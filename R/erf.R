@@ -1,4 +1,6 @@
-#' To calculate the error for a normal variable
+#' Error function and its inverse
+#'
+#' Calculates the error function, its complement and their inverses, used for the normal distribution.
 #'
 #' This function calculates the value of the error according to the          
 #' normally distributed variable using the idea presented in   
@@ -11,6 +13,7 @@
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 #' MGM Khan <khan_mg@usp.ac.fj>
 #'
+#' @keywords internal
 #the 'error function'
 erf <- function(x)
   {

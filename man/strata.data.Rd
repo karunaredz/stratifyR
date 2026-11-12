@@ -2,7 +2,7 @@
 % Please edit documentation in R/strata.data.R
 \name{strata.data}
 \alias{strata.data}
-\title{Stratification of Univariate Survey Population Using the Data}
+\title{Stratify a univariate population using the data}
 \usage{
 strata.data(
   data,

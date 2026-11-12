@@ -1,5 +1,6 @@
-#' Calculate the objective function value for a given (d, y) under a
-#' hypothesized distribution (scaled-data formulation)
+#' Objective function value of one stratum (distribution)
+#'
+#' Calculates the value of the objective function for one stratum under an assumed distribution, given the remaining range d and the stratum width y (on the scaled axis).
 #'
 #' Used by the DP recurrences in the "distribution-known" pathway. All
 #' distribution parameters are interpreted on the "scaled" axis
@@ -16,6 +17,7 @@
 #'
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 #' MGM Khan <khan_mg@usp.ac.fj>
+#' @keywords internal
 distr.root <- function(d, y, c, my_env)
 {
   ## ---------------------------------------------------------------------------

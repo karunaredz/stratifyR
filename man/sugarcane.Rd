@@ -3,7 +3,7 @@
 \docType{data}
 \name{sugarcane}
 \alias{sugarcane}
-\title{Sugarcane Farming Data in Fiji}
+\title{Sugarcane farming data from Fiji}
 \format{
 A data frame with 13894 observations corresponding to individual farms.
 The following are the variables:

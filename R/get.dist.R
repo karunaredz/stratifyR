@@ -1,6 +1,6 @@
-#' Determine best-fit distribution
-#'Identify the best-fit distribution for a univariate numeric vector
-
+#' Find the best-fit distribution
+#'
+#' Identifies the best-fit distribution for a numeric vector, by AIC among the supported families.
 #' @param data Input dataset.
 #' @param my_env Environment object.
 #' @return ...
@@ -19,6 +19,7 @@
 #'
 #' @import fitdistrplus
 #' @importFrom stats quantile var sd
+#' @keywords internal
 get.dist <- function(data, my_env) {
    # ---- preflight -----------------------------------------------------------
    stopifnot(is.numeric(data))

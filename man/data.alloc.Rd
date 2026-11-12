@@ -2,9 +2,7 @@
 % Please edit documentation in R/data.alloc.R
 \name{data.alloc}
 \alias{data.alloc}
-\title{Allocate data
-To calculate the stratum sample sizes (nh) for a fixed sample size (n) 
-directly based on the data}
+\title{Allocate the sample to strata found from data}
 \usage{
 data.alloc(data, my_env)
 }
@@ -20,7 +18,6 @@ Uses OSB to compute stratum weights (Wh), sample variances (Vh from data),
 and Neyman allocations (nh). Builds the summary table once at the end.
 }
 \description{
-Allocate data
-To calculate the stratum sample sizes (nh) for a fixed sample size (n) 
-directly based on the data
+Calculates the stratum sample sizes (nh) for a fixed total sample size (n) directly from the data.
 }
+\keyword{internal}

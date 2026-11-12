@@ -10,7 +10,7 @@
 #   * Adds extra diagnostic slots (optimality_gap, kkt_residuals, converged).
 # =============================================================================
 
-#' Stratification of Univariate Survey Population Using the Distribution
+#' Stratify a univariate population using a distribution
 #'
 #' This function takes in the underlying hypothetical distribution and its
 #' parameter(s) of the survey variable, the initial value and the range of the

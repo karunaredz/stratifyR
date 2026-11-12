@@ -2,8 +2,7 @@
 % Please edit documentation in R/distr.alloc.R
 \name{distr.alloc}
 \alias{distr.alloc}
-\title{To calculate the stratum sample sizes (nh) for a fixed sample size (n) based
-on the hypothetical distribution of the data}
+\title{Allocate the sample to strata found from a distribution}
 \usage{
 distr.alloc(my_env)
 }
@@ -14,7 +13,11 @@ distr.alloc(my_env)
 Populates my_env$output, my_env$out, and totals (WhTot, NhTot, etc.)
 }
 \description{
+Calculates the stratum sample sizes (nh) for a fixed total sample size (n) from an assumed distribution.
+}
+\details{
 Uses OSB to compute stratum weights (Wh), variances (Vh), Neyman allocations (nh),
 and related totals under a *given* population distribution. Integrations are
 cached per stratum; the output data.frame is built once at the end (faster).
 }
+\keyword{internal}

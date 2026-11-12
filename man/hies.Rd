@@ -3,7 +3,7 @@
 \docType{data}
 \name{hies}
 \alias{hies}
-\title{Household Income Expenditure Survey (HIES) in Fiji}
+\title{Household Income and Expenditure Survey (HIES) data from Fiji}
 \format{
 A data frame with 3566 observations on two of
 the major quantities collected in the survey. The

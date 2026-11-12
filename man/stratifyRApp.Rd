@@ -2,7 +2,7 @@
 % Please edit documentation in R/app.R
 \name{stratifyRApp}
 \alias{stratifyRApp}
-\title{Launch the stratifyR 2.0 Interactive Shiny Application}
+\title{Launch the stratifyR Shiny application}
 \usage{
 stratifyRApp(...)
 }

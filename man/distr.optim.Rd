@@ -2,8 +2,7 @@
 % Please edit documentation in R/distr.optim.R
 \name{distr.optim}
 \alias{distr.optim}
-\title{To implement the Dynamic Programming (DP) solution procedure on the stratification
-problem presented in the form of a Mathematical Programming Problem (MPP)}
+\title{Dynamic programming for a distribution}
 \usage{
 distr.optim(k, n, incf, minYk, maxYk, isFirstRun = TRUE, my_env)
 }
@@ -28,6 +27,9 @@ from earlier opeartions through various other functions}
 function values
 }
 \description{
+Carries out the dynamic programming (DP) solution of the stratification problem, written as a mathematical programming problem (MPP), for an assumed distribution.
+}
+\details{
 This function uses the Dynamic Programming (DP) solution procedure in solving the
 objective function for the univariate stratification problem. It calculates
 the objective function values using the brute-force algorithm and stores those
@@ -37,3 +39,4 @@ could be obtained.
 \author{
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan <khan_mg@usp.ac.fj>
 }
+\keyword{internal}

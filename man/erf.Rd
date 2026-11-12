@@ -2,7 +2,7 @@
 % Please edit documentation in R/erf.R
 \name{erf}
 \alias{erf}
-\title{To calculate the error for a normal variable}
+\title{Error function and its inverse}
 \usage{
 erf(x)
 }
@@ -13,6 +13,9 @@ erf(x)
 \code{} Gives the error for a normal variable
 }
 \description{
+Calculates the error function, its complement and their inverses, used for the normal distribution.
+}
+\details{
 This function calculates the value of the error according to the          
 normally distributed variable using the idea presented in   
 Abramowitz and Stegun (2011)
@@ -21,3 +24,4 @@ Abramowitz and Stegun (2011)
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 MGM Khan <khan_mg@usp.ac.fj>
 }
+\keyword{internal}

@@ -1,4 +1,6 @@
-#' To create and store calculated values of the objective function
+#' Create the matrices for the dynamic programming solver
+#'
+#' Creates and stores the values of the objective function used by the dynamic programming solver.
 #'
 #' This function creates a matrix whose rows and columns depend on the
 #' range or distance of the data and the number of strata solutions that the
@@ -16,6 +18,7 @@
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 #' MGM Khan <khan_mg@usp.ac.fj>
 #'
+#' @keywords internal
 create.mat <- function(my_env) {
   # pull sizes
   stages <- as.integer(my_env$stages)

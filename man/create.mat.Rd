@@ -2,7 +2,7 @@
 % Please edit documentation in R/create.mat.R
 \name{create.mat}
 \alias{create.mat}
-\title{To create and store calculated values of the objective function}
+\title{Create the matrices for the dynamic programming solver}
 \usage{
 create.mat(my_env)
 }
@@ -16,6 +16,9 @@ and stores in the two matrices inside the my_env to be accessed by other
 functions
 }
 \description{
+Creates and stores the values of the objective function used by the dynamic programming solver.
+}
+\details{
 This function creates a matrix whose rows and columns depend on the
 range or distance of the data and the number of strata solutions that the
 user is seeking to compute. The matrix stores the objective function values
@@ -26,3 +29,4 @@ presenting the OSB.
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 MGM Khan <khan_mg@usp.ac.fj>
 }
+\keyword{internal}

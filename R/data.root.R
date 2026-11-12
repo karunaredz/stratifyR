@@ -1,4 +1,6 @@
-#' Calculate the objective function value for a given (d, y)
+#' Objective function value of one stratum (data)
+#'
+#' Calculates the value of the objective function for one stratum, given the remaining range d and the stratum width y.
 #'
 #' Used by the DP recurrences to evaluate the stratification objective at
 #' a specific remaining distance 'd' and first-stratum width 'y', given
@@ -11,6 +13,7 @@
 #'
 #' @importFrom stats pgamma
 #' @return numeric: sqrt(objective) or -1 if branch is infeasible/invalid
+#' @keywords internal
 data.root <- function(d, y, c, my_env)
 {
   ## ---------------------------------------------------------------------------

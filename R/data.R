@@ -1,4 +1,4 @@
-#' Micronutrient data on Anaemia in Fiji
+#' Micronutrient data on anaemia in Fiji
 #'
 #' The Anaemia data comes from the Fiji National Nutritional Survey
 #' in 2004 on the "Micronutrient Status of Women in Fiji".
@@ -25,7 +25,7 @@
 #' boxplot(anaemia$Folate)
 #'
 "anaemia"
-#' Household Income Expenditure Survey (HIES) in Fiji
+#' Household Income and Expenditure Survey (HIES) data from Fiji
 #'
 #' The hies data comes from the HIES survey conducted
 #' in Fiji in the year 2010. The data contains only two aspects
@@ -50,7 +50,7 @@
 #' boxplot(hies$Income)
 #'
 "hies"
-#' Mathematics Marks for First-year University Students
+#' Mathematics marks for first-year university students
 #'
 #' The data contains the mathematics coursework marks, final
 #' examination marks and grades obtained by students in a
@@ -79,7 +79,7 @@
 #' boxplot(math$final_marks)
 #'
 "math"
-#' Sugarcane Farming Data in Fiji
+#' Sugarcane farming data from Fiji
 #'
 #' The sugarcane data shows the disposition area (land
 #' area under cane) for individual sugarcane farms

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.strata.R
 \name{plot.strata}
 \alias{plot.strata}
-\title{Plot Method for Stratified Survey Design Objects}
+\title{Plot a stratification}
 \usage{
 \method{plot}{strata}(
   x,

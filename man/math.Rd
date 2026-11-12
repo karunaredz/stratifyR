@@ -3,7 +3,7 @@
 \docType{data}
 \name{math}
 \alias{math}
-\title{Mathematics Marks for First-year University Students}
+\title{Mathematics marks for first-year university students}
 \format{
 A data frame with 353 observations which represent
 mathematics marks and grades for first year math students at

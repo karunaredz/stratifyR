@@ -2,7 +2,7 @@
 # print.strata.R  --  stratifyR 2.0
 # =============================================================================
 
-#' Print Method for Stratified Survey Design Objects
+#' Print a stratification
 #'
 #' Prints a compact console summary of the stratification results. For the full
 #' per-stratum table use \code{summary(x)}.

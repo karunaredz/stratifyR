@@ -1,4 +1,6 @@
-#' To identify the minimum value out of two given sets of values
+#' Smaller of two values
+#'
+#' Returns the smaller of two values.
 #'
 #' This function is called in data.optim() or distr.optim()
 #' which basically compares and returns the smaller value out
@@ -12,6 +14,7 @@
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 #' MGM Khan <khan_mg@usp.ac.fj>
 #'
+#' @keywords internal
 minim.val <- function(val1, val2)
 {
   if(val1 <= val2) val1

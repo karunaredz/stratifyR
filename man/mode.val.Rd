@@ -2,7 +2,7 @@
 % Please edit documentation in R/mode.val.R
 \name{mode.val}
 \alias{mode.val}
-\title{To calculate the modal value of the data}
+\title{Mode of the data}
 \usage{
 mode.val(x)
 }
@@ -13,6 +13,9 @@ mode.val(x)
 \code{} Gives the mode
 }
 \description{
+Calculates the mode of the data.
+}
+\details{
 This function calculates the value of the mode of the data
 that is provided
 }
@@ -20,3 +23,4 @@ that is provided
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
 MGM Khan <khan_mg@usp.ac.fj>
 }
+\keyword{internal}
