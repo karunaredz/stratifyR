@@ -2,19 +2,70 @@
 % Please edit documentation in R/summary.strata.R
 \name{summary.strata}
 \alias{summary.strata}
-\title{Format and Present Results}
+\alias{as.data.frame.summary.strata}
+\alias{print.summary.strata}
+\title{Summarise a stratification}
 \usage{
 \method{summary}{strata}(object, ...)
+
+\method{as.data.frame}{summary.strata}(x, row.names = NULL, optional = FALSE, ...)
+
+\method{print}{summary.strata}(x, ...)
 }
 \arguments{
-\item{object}{A strata object.}
+\item{object}{An object of class \code{"strata"}, from
+\code{\link{strata.data}} or \code{\link{strata.distr}}.}
 
-\item{...}{Additional arguments.
+\item{...}{Not used.}
 
-Nicely formatted (and colored) summary for "strata" objects
-Console: aligned ASCII table with crayon colors (if supported).
-HTML: kable + kableExtra with yellow TOTAL row (text only, no background).}
+\item{x}{An object of class \code{"summary.strata"}.}
+
+\item{row.names, optional}{Not used; for compatibility with the generic.}
+}
+\value{
+\code{summary()} returns an object of class \code{"summary.strata"},
+  a list with components:
+\describe{
+  \item{\code{L}}{Number of strata.}
+  \item{\code{n}, \code{N}}{Sample size and population size.}
+  \item{\code{method}}{The solver used.}
+  \item{\code{distr}, \code{estimate}}{The best-fit distribution and its
+    parameter estimates.}
+  \item{\code{range}}{The smallest and largest values of the variable.}
+  \item{\code{cost}, \code{ch}}{Whether stratum costs were used, and the costs.}
+  \item{\code{takeall}, \code{fpc}, \code{variance}}{The take-all stratum
+    size, whether the finite population correction was used, and the
+    variance of the mean (for \code{fpc = TRUE} or \code{takeall = TRUE}).}
+  \item{\code{table}}{A data frame with one row per stratum and a total row:
+    the upper boundary (\code{OSB}), \code{Wh}, \code{Vh} (the stratum
+    variance \eqn{S_h^2}), \code{WhSh}, \code{nh}, \code{Nh} and \code{fh}.}
+}
+  \code{print()} returns \code{x} invisibly, and \code{as.data.frame()}
+  returns \code{x$table}.
 }
 \description{
-Format and Present Results
+Builds a summary of a \code{"strata"} object: the design settings, the
+fitted distribution and a table with one row per stratum and a total row.
+\code{summary()} prints nothing itself; the result is printed by its
+\code{print()} method (or automatically at the console), and
+\code{as.data.frame()} returns the table.
+}
+\details{
+In the console, the boundary and \eqn{W_h S_h} columns are shown in purple
+and the total row in bold gold when the console supports colour (through
+the \pkg{crayon} package; set \code{options(stratifyR.color = FALSE)} to
+turn this off). In R Markdown, the table is shown as a styled HTML table.
+}
+\examples{
+\donttest{
+data(sugarcane)
+res <- strata.data(sugarcane$Production, h = 4, n = 500, method = "exact")
+s <- summary(res)
+s
+as.data.frame(s)
+}
+}
+\seealso{
+\code{\link{strata.data}}, \code{\link{boundaries}},
+  \code{\link{allocation}}, \code{\link{objective}}
 }

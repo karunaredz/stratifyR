@@ -228,13 +228,17 @@ strata.distr <- function(h,
                NhTot   = NhTot,
                fhTot   = fhTot)
 
+  # v2.1-0: unrounded stratum values, used by allocation() and objective()
+  out5 <- list(stratum_full   = my_env$output_full,
+               objective_full = my_env$deno_full)
+
   out4 <- list(optimality_gap  = optimality_gap,
                kkt_residuals   = kkt_resid,
                converged       = converged,
                method          = method,
                data_internal   = NULL)   # no raw data for distr pathway
 
-  result <- c(out1, out2, out3, out4)
+  result <- c(out1, out2, out3, out4, out5)
   class(result) <- "strata"
   result
 }

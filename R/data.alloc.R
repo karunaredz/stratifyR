@@ -54,6 +54,9 @@ data.alloc <- function(data, my_env)
     Vh   = round(var, 2),
     WhSh = round(whsh, 3)
   )
+  # v2.1-0: the same values without rounding, for the accessor functions
+  my_env$output_full <- data.frame(Wh = Wh, Vh = var, WhSh = whsh)
+  my_env$deno_full   <- deno
   my_env$Nh <- Nh
   
   # -------- initial Neyman allocation (sum to n) --------

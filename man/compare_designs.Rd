@@ -2,11 +2,14 @@
 % Please edit documentation in R/compare_designs.R
 \name{compare_designs}
 \alias{compare_designs}
+\alias{compare_designs.default}
 \alias{compare_designs.strata}
 \alias{print.compare_designs}
 \title{Compare survey design efficiencies}
 \usage{
 compare_designs(object, ...)
+
+\method{compare_designs}{default}(object, ...)
 
 \method{compare_designs}{strata}(object, n = NULL, ...)
 

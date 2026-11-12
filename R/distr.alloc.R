@@ -362,6 +362,10 @@ distr.alloc <- function(my_env)
     WhSh = round(whsh,  3)
   )
   
+  # v2.1-0: the same values without rounding, for the accessor functions
+  my_env$output_full <- data.frame(Wh = outWh, Vh = Vh, WhSh = whsh)
+  my_env$deno_full   <- deno
+
   # ----------------------- totals for summary() ------------------------------
   my_env$deno  <- round(deno, 3)
   my_env$WhTot <- if (distr == "unif") round(sum(Wh), 2) else round(sum(AWh), 2)

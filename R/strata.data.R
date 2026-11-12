@@ -268,6 +268,10 @@ strata.data <- function(data,
                fhTot   = fhTot)
 
   # Extra slots (v2.0 additions - backward-compatible; ignored by old code)
+  # v2.1-0: unrounded stratum values, used by allocation() and objective()
+  out5 <- list(stratum_full   = my_env$output_full,
+               objective_full = my_env$deno_full)
+
   out4 <- list(optimality_gap  = optimality_gap,
                kkt_residuals   = kkt_resid,
                converged       = converged,
@@ -278,7 +282,7 @@ strata.data <- function(data,
                fpc             = full_var,
                data_internal   = data_raw)   # for plot.strata()
 
-  result <- c(out1, out2, out3, out4)
+  result <- c(out1, out2, out3, out4, out5)
   class(result) <- "strata"
   result
 }
