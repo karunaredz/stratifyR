@@ -27,6 +27,6 @@ presenting the OSB.
 }
 \author{
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
-MGM Khan <khan_mg@usp.ac.fj>
+MGM Khan <mgm.khan@usp.ac.fj>
 }
 \keyword{internal}

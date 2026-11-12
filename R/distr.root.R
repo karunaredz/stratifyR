@@ -16,7 +16,7 @@
 #' @return numeric: sqrt(objective) or -1 if branch is infeasible/invalid
 #'
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
-#' MGM Khan <khan_mg@usp.ac.fj>
+#' MGM Khan <mgm.khan@usp.ac.fj>
 #' @keywords internal
 distr.root <- function(d, y, c, my_env)
 {

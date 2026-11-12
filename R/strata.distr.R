@@ -24,15 +24,23 @@
 #' procedure.
 #'
 #'
-#' @param h A numeric: denotes the number of strata to be created.
-#' @param initval A numeric: denotes the initial value of the population.
-#' @param dist A numeric: denotes distance (or range) of the population.
+#' @param h The number of strata, a whole number of at least 2.
+#' @param initval The smallest value of the stratification variable.
+#' @param dist The range of the variable (largest minus smallest value), a
+#' positive number.
 #' @param distr A character: denotes the name of the distribution that
 #' characterizes the population.
-#' @param params A list: contains the values of all parameters of the
-#' distribution.
-#' @param n A numeric: denotes the fixed total sample size.
-#' @param N A numeric: denotes the fixed total population size.
+#' @param params A named numeric vector (or list) with the parameters of the
+#' distribution: \code{shape} and \code{scale} for \code{"pareto"} and
+#' \code{"weibull"}; \code{shape} and \code{rate} for \code{"gamma"};
+#' \code{rate} for \code{"exp"}; \code{min} and \code{max} for
+#' \code{"unif"} and \code{"rtriangle"}, with \code{mode} also for
+#' \code{"triangle"}; \code{mean} and \code{sd} for \code{"norm"};
+#' \code{meanlog} and \code{sdlog} for \code{"lnorm"}; and \code{location}
+#' and \code{scale} for \code{"cauchy"}.
+#' @param n The total sample size, a whole number between \code{h} and
+#' \code{N}.
+#' @param N The population size.
 #' @param cost A logical: has default cost=FALSE. If it is a stratum-cost
 #' problem, cost=TRUE, with which one must provide the Ch parameter.
 #' @param ch A numeric: denotes a vector of stratum costs.
@@ -47,10 +55,13 @@
 #' @param verbose Logical. Print per-start progress. Default \code{FALSE}.
 #' @return \code{strata.distr} returns Optimum Strata Boundaries (OSB), stratum
 #' weights (Wh), stratum costs (Ch), stratum variances (Vh), Optimum Sample
-#' Sizes (nh), stratum population sizes (Nh).
+#' Sizes (nh), stratum population sizes (Nh), as an object of class
+#' \code{"strata"}. Use \code{\link{boundaries}}, \code{\link{allocation}},
+#' \code{\link{objective}} and \code{\link{variance}} to get the results.
 #' @author Karuna Reddy <karuna.reddy@@auckland.ac.nz>\cr MGM Khan
-#' <khan_mg@@usp.ac.fj>
-#' @seealso \code{strata.data}
+#' <mgm.khan@@usp.ac.fj>
+#' @seealso \code{\link{strata.data}}, \code{\link{boundaries}},
+#' \code{\link{summary.strata}}, \code{\link{compare_designs}}
 #' @examples
 #' 
 #' \dontrun{

@@ -11,7 +11,7 @@
 #' @return \code{} Gives the error for a normal variable
 #'
 #' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr
-#' MGM Khan <khan_mg@usp.ac.fj>
+#' MGM Khan <mgm.khan@usp.ac.fj>
 #'
 #' @keywords internal
 #the 'error function'

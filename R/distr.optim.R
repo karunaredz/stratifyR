@@ -20,7 +20,7 @@
 #' @return \code{} returns the array filled with calculations of objective
 #' function values
 #'
-#' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan <khan_mg@usp.ac.fj>
+#' @author Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan <mgm.khan@usp.ac.fj>
 #'
 #' @keywords internal
 # distr.optim.R  (rewritten: safe bounds, window clamp, guarded indexing)

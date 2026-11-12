@@ -20,12 +20,14 @@ strata.data(
 )
 }
 \arguments{
-\item{data}{A vector of values of the survey variable y for which the OSB
-are determined.}
+\item{data}{A numeric vector with the values of the stratification
+variable for every unit of the population. It must have no missing or
+infinite values and at least \code{2 * h} values.}
 
-\item{h}{A numeric: denotes the number of strata to be created.}
+\item{h}{The number of strata, a whole number of at least 2.}
 
-\item{n}{A numeric: denotes a fixed total sample size.}
+\item{n}{The total sample size, a whole number between \code{h} and the
+population size.}
 
 \item{cost}{A logical: has default cost=FALSE. If it is a stratum-cost
 problem, cost=TRUE, with which, one must provide the Ch parameter.}
@@ -76,7 +78,9 @@ fraction (fh). It also contains \code{variance}, the variance of the
 stratified mean with the finite population correction for the final
 allocation, \code{takeall}, the number of units in a take-all top stratum (0
 if there is none), and \code{fpc}, which records whether the full variance
-was minimised.
+was minimised. Use \code{\link{boundaries}}, \code{\link{allocation}},
+\code{\link{objective}} and \code{\link{variance}} to get the results, and
+\code{summary()} for the full table.
 }
 \description{
 This function takes in the univariate population data (argument \code{data})
@@ -141,7 +145,9 @@ quakes \%>\%
 
 }
 \seealso{
-\code{strata.distr}
+\code{\link{strata.distr}}, \code{\link{boundaries}},
+\code{\link{summary.strata}}, \code{\link{compare_designs}},
+\code{\link{plot.strata}}
 }
 \author{
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan
