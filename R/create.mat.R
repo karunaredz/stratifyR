@@ -21,7 +21,7 @@ create.mat <- function(my_env) {
   stages <- as.integer(my_env$stages)
   e <- as.integer(my_env$e)
   
-  cat("The program is running, it'll take some time!\n")
+  message("The program is running, it'll take some time!")
   
   # basic sanity checks (defensive)
   if (!is.finite(stages) || stages < 2L)

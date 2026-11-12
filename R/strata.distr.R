@@ -109,16 +109,29 @@ strata.distr <- function(h,
                           tol      = 1e-9,
                           verbose  = FALSE) {
 
-  method <- match.arg(method)
+  method <- .check_method(method, c("dp", "cobyla", "global"))
 
-  # ---- validation ------------------------------------------------------------
-  if (missing(h))       stop("Number of strata ('h') must be specified")
-  if (missing(initval)) stop("Initial value ('initval') must be specified")
-  if (missing(dist))    stop("Range ('dist') must be specified")
-  if (missing(distr))   stop("Distribution ('distr') must be specified")
-  if (missing(params))  stop("Parameters ('params') must be specified")
-  if (missing(n) && missing(N))
-    stop("'n' or 'N' must be specified")
+  # ---- input checks (v2.1-0) -------------------------------------------------
+  if (missing(initval))
+    stop("'initval' (the smallest value of the variable) must be given.", call. = FALSE)
+  if (missing(dist))
+    stop("'dist' (the range of the variable) must be given.", call. = FALSE)
+  if (missing(distr))
+    stop("'distr' (the name of the distribution) must be given.", call. = FALSE)
+  if (missing(params))
+    stop("'params' (the parameters of the distribution) must be given.", call. = FALSE)
+  if (missing(N) || is.null(N))
+    stop("'N' (the population size) must be given.", call. = FALSE)
+  .check_h(h)
+  distr <- .check_distr(distr, params, initval, dist)
+  .check_count(N, "N", min = 2L, what = " (the population size)")
+  if (N < 2 * h)
+    stop("'N' = ", N, " is too small for ", h, " strata; at least ", 2 * h,
+         " units are needed.", call. = FALSE)
+  .check_n(n, h, N = N)
+  .check_cost(cost, ch, h)
+  if (method %in% c("cobyla", "global"))
+    .check_solver_settings(n_starts, max_iter, tol, verbose)
 
   # v2.0-3: a bounded distribution must have some probability in the range
   # [initval, initval + dist]; otherwise every stratum would be empty.
@@ -139,8 +152,6 @@ strata.distr <- function(h,
   my_env$cost <- cost
 
   if (isTRUE(cost)) {
-    if (length(ch) != h)
-      stop("'ch' vector must have length equal to h")
     my_env$ch <- ch
   } else {
     my_env$ch <- rep(1, h)

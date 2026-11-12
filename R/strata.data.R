@@ -135,19 +135,24 @@ strata.data <- function(data,
                          fpc      = FALSE,
                          takeall  = FALSE) {
 
-  method <- match.arg(method)
+  method <- .check_method(method, c("dp", "cobyla", "global", "exact"))
+
+  # ---- input checks (v2.1-0) -------------------------------------------------
+  .check_h(h)
+  .check_data(data, h)
+  .check_n(n, h, N = length(data))
+  .check_cost(cost, ch, h)
+  .check_flag(fpc, "fpc")
+  .check_flag(takeall, "takeall")
+  if (method %in% c("cobyla", "global"))
+    .check_solver_settings(n_starts, max_iter, tol, verbose)
+
   full_var <- isTRUE(fpc) || isTRUE(takeall)
   if (full_var && method != "exact")
-    stop("'fpc' and 'takeall' are available with method = \"exact\" only.")
+    stop("'fpc' and 'takeall' are available with method = \"exact\" only.",
+         call. = FALSE)
   if (full_var && isTRUE(cost))
-    stop("'fpc' and 'takeall' cannot be combined with cost = TRUE.")
-
-  # ---- input validation ------------------------------------------------------
-  if (missing(data)) stop("'data' must be specified")
-  if (missing(h))    stop("'h' must be specified")
-  if (missing(n))    stop("'n' must be specified")
-  if (n > length(data))
-    stop("'n' cannot be greater than N (length of data)")
+    stop("'fpc' and 'takeall' cannot be combined with cost = TRUE.", call. = FALSE)
 
   data_raw <- as.numeric(data)
 
@@ -160,8 +165,6 @@ strata.data <- function(data,
 
   my_env$cost <- cost
   if (isTRUE(cost)) {
-    if (length(ch) != h)
-      stop("'ch' must have length equal to h")
     my_env$ch <- ch
   } else {
     my_env$ch <- rep(1, h)
@@ -498,8 +501,11 @@ strata.data <- function(data,
   real <- list(distr = distr,
                estimate = .rescale_params(distr, my_env$obj[["params"]], my_env$maxval))
   if (distr %in% c("pareto", "triangle", "rtriangle")) return(real)
+  # The optimiser tries impossible trial values (for example a negative
+  # Weibull shape) on the way to the estimate; the warnings these give are
+  # harmless, so they are muffled here as in get.dist().
   tryCatch(
-    fitdistrplus::fitdist(data_raw, distr = distr, method = "mle"),
+    suppressWarnings(fitdistrplus::fitdist(data_raw, distr = distr, method = "mle")),
     error = function(e) real)
 }
 

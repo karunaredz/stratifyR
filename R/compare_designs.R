@@ -66,13 +66,20 @@ compare_designs <- function(object, ...) UseMethod("compare_designs")
 
 #' @rdname compare_designs
 #' @export
+compare_designs.default <- function(object, ...) {
+  stop("compare_designs() needs a result from strata.data() or strata.distr(); ",
+       "you gave an object of class '", class(object)[1], "'.", call. = FALSE)
+}
+
+#' @rdname compare_designs
+#' @export
 compare_designs.strata <- function(object, n = NULL, ...) {
 
-  if (!inherits(object, "strata"))
-    stop("'object' must be of class \"strata\".")
-
-  n_total <- if (!is.null(n)) as.integer(n) else object$nhTot
-  if (n_total < 1L) stop("'n' must be a positive integer.")
+  if (is.null(n)) {
+    n_total <- object$nhTot
+  } else {
+    n_total <- .check_n(n, nrow(object$h), N = object$NhTot)
+  }
 
   H   <- nrow(object$h)
   Wh  <- object$Wh

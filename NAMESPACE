@@ -13,6 +13,7 @@ S3method(plot,    strata)
 
 # ---- S3 methods -- "compare_designs" class ---------------------------------
 S3method(compare_designs, strata)
+S3method(compare_designs, default)
 S3method(print, compare_designs)
 
 # ---- Imports ----------------------------------------------------------------
