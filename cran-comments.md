@@ -1,25 +1,29 @@
 ## Submission
 
-This is an update of stratifyR from 2.0-2 to 2.0-3. I apologise for sending
-it soon after 2.0-2. It is a correctness release that fixes errors found in a
-larger simulation study after 2.0-2 was accepted; some of them give wrong
-results, so I did not want to leave them on CRAN. The user interface is
-unchanged. The main fixes are:
+This is an update of stratifyR from 2.0-3 to 2.0-4. I am sorry to send it soon
+after 2.0-3. It adds two options that are needed for the results of the
+accompanying paper that is about to be submitted to the Journal of Statistical
+Software, and I would like the CRAN version to match the paper. Existing calls
+give the same results as in 2.0-3. The changes are:
 
-* Pareto and triangular distribution fits failed inside the package, so a
-  wrong family could be selected; on some platforms a numerically unstable
-  Pareto likelihood could also make the Pareto win the AIC comparison.
-* method = "cobyla" and "global" could leave the smallest or largest unit out
-  of the cost they minimise, giving designs far from the optimum on data with
-  extreme values.
-* method = "dp" could stop with an error on some heavy-tailed data.
-* strata.distr() stratum sizes did not always add up to N.
+* method = "exact" in strata.data() has two new options. fpc = TRUE minimises
+  the full variance of the stratified mean, including the finite population
+  correction. takeall = TRUE also allows a take-all top stratum when this
+  lowers the variance. Both default to FALSE.
+* strata.data() results have three new elements: variance, takeall and fpc.
+  summary() shows them when the options are used, and a warning is given
+  when a stratum gets fewer than 2 sample units.
+* The Shiny app (inst/app) has controls for the new options, and its labels
+  now write the number of strata as L.
+* The vignette has a new section on the new options.
 
-Each fix has a unit test. Details are in NEWS.md.
+The new options have unit tests, including a check of fpc = TRUE against a
+full enumeration of a small sample. Details are in NEWS.md.
 
 ## Test environments
 
 * local macOS 27.0.1 (aarch64-apple-darwin23), R 4.6.1
+* win-builder (R-devel)
 
 ## R CMD check results
 
