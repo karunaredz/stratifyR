@@ -1,12 +1,12 @@
 # =============================================================================
 # zzz.R  -  stratifyR 2.1
 #
-# Registers the knit_print() method for "summary.strata" with knitr, which is
+# Registers the knit_print() method for "summary.stratifyR" with knitr, which is
 # only suggested, so the method is registered when knitr is loaded.
 # =============================================================================
 
 .onLoad <- function(libname, pkgname) {
-  .s3_register("knitr::knit_print", "summary.strata", knit_print.summary.strata)
+  .s3_register("knitr::knit_print", "summary.stratifyR", knit_print.summary.stratifyR)
   invisible()
 }
 

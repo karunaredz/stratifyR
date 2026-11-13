@@ -9,7 +9,7 @@
 #' \code{"interactive"} render \pkg{plotly} views of the Neyman cost surface.
 #'
 #'
-#' @param x A \code{"strata"} object.
+#' @param x A \code{"stratifyR"} object.
 #' @param type \code{"2d"} (default), \code{"3d"}, or \code{"interactive"}.
 #' @param data Optional numeric vector of population values.
 #' @param n_pts Integer. Density grid size. Default \code{512L}.
@@ -31,8 +31,9 @@
 #' plot(res, type = "interactive")
 #' }
 #'
+#' @rdname plot.strata
 #' @export
-plot.strata <- function(x,
+plot.stratifyR <- function(x,
                          type      = c("2d", "3d", "interactive"),
                          data      = NULL,
                          n_pts     = 512L,

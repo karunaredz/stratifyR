@@ -3,7 +3,7 @@
 \name{compare_designs}
 \alias{compare_designs}
 \alias{compare_designs.default}
-\alias{compare_designs.strata}
+\alias{compare_designs.stratifyR}
 \alias{print.compare_designs}
 \title{Compare survey design efficiencies}
 \usage{
@@ -11,12 +11,12 @@ compare_designs(object, ...)
 
 \method{compare_designs}{default}(object, ...)
 
-\method{compare_designs}{strata}(object, n = NULL, ...)
+\method{compare_designs}{stratifyR}(object, n = NULL, ...)
 
 \method{print}{compare_designs}(x, digits = 6, ...)
 }
 \arguments{
-\item{object}{An object of class \code{"strata"}.}
+\item{object}{An object of class \code{"stratifyR"}.}
 
 \item{...}{Currently unused.}
 
@@ -47,7 +47,7 @@ An object of class \code{"compare_designs"} (an invisibly-printed
 }
 }
 \description{
-Given a fitted \code{"strata"} object (from \code{\link{strata.data}} or
+Given a fitted \code{"stratifyR"} object (from \code{\link{strata.data}} or
 \code{\link{strata.distr}}), computes and compares the variance of the
 sample mean under three designs for the \strong{same} total sample size
 \eqn{n}:

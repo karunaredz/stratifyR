@@ -3,48 +3,48 @@
 \name{accessors}
 \alias{accessors}
 \alias{boundaries}
-\alias{boundaries.strata}
+\alias{boundaries.stratifyR}
 \alias{allocation}
-\alias{allocation.strata}
-\alias{as.data.frame.strata}
+\alias{allocation.stratifyR}
+\alias{as.data.frame.stratifyR}
 \alias{objective}
-\alias{objective.strata}
+\alias{objective.stratifyR}
 \alias{objective.compare_designs}
 \alias{variance}
-\alias{variance.strata}
+\alias{variance.stratifyR}
 \alias{fitted_distribution}
-\alias{fitted_distribution.strata}
+\alias{fitted_distribution.stratifyR}
 \alias{as.data.frame.compare_designs}
 \title{Get the results of a stratification}
 \usage{
 boundaries(x, ...)
 
-\method{boundaries}{strata}(x, ends = FALSE, ...)
+\method{boundaries}{stratifyR}(x, ends = FALSE, ...)
 
 allocation(x, ...)
 
-\method{allocation}{strata}(x, ...)
+\method{allocation}{stratifyR}(x, ...)
 
-\method{as.data.frame}{strata}(x, row.names = NULL, optional = FALSE, ...)
+\method{as.data.frame}{stratifyR}(x, row.names = NULL, optional = FALSE, ...)
 
 objective(x, ...)
 
-\method{objective}{strata}(x, ...)
+\method{objective}{stratifyR}(x, ...)
 
 \method{objective}{compare_designs}(x, ...)
 
 variance(x, ...)
 
-\method{variance}{strata}(x, ...)
+\method{variance}{stratifyR}(x, ...)
 
 fitted_distribution(x, ...)
 
-\method{fitted_distribution}{strata}(x, ...)
+\method{fitted_distribution}{stratifyR}(x, ...)
 
 \method{as.data.frame}{compare_designs}(x, row.names = NULL, optional = FALSE, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"strata"}, or for \code{objective()} and
+\item{x}{An object of class \code{"stratifyR"}, or for \code{objective()} and
 \code{as.data.frame()} also of class \code{"compare_designs"}.}
 
 \item{...}{Not used.}
@@ -76,7 +76,7 @@ largest value of the variable.
 boundary, the population size \eqn{N_h}, the weight \eqn{W_h = N_h/N}, the
 standard deviation \eqn{S_h}, the product \eqn{W_h S_h}, the sample size
 \eqn{n_h} and the sampling fraction \eqn{f_h = n_h/N_h}.
-\code{as.data.frame()} on a \code{"strata"} object gives the same table.
+\code{as.data.frame()} on a \code{"stratifyR"} object gives the same table.
 
 \code{objective()} returns the value of the objective function
 \eqn{\Phi = \sum_h W_h S_h} at the boundaries, the quantity that the
@@ -108,6 +108,6 @@ as.data.frame(compare_designs(res))
 }
 }
 \seealso{
-\code{\link{strata.data}}, \code{\link{summary.strata}},
+\code{\link{strata.data}}, \code{\link{summary.stratifyR}},
   \code{\link{compare_designs}}
 }

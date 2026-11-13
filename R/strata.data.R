@@ -60,7 +60,7 @@
 #' this gives a lower variance; the rest of the sample is allocated by Neyman
 #' allocation over the other strata. Implies \code{fpc = TRUE}. Default
 #' \code{FALSE}.
-#' @return \code{strata.data} returns an object of class \code{"strata"} with
+#' @return \code{strata.data} returns an object of class \code{"stratifyR"} with
 #' the Optimum Strata Boundaries (OSB; the upper boundary of each stratum, the
 #' last being the largest data value), stratum weights (Wh), stratum variances
 #' (Vh), Optimum Sample Sizes (nh), stratum population sizes (Nh) and sampling
@@ -74,8 +74,8 @@
 #' @author Karuna Reddy <karuna.reddy@@auckland.ac.nz>\cr MGM Khan
 #' <mgm.khan@@usp.ac.fj>
 #' @seealso \code{\link{strata.distr}}, \code{\link{boundaries}},
-#' \code{\link{summary.strata}}, \code{\link{compare_designs}},
-#' \code{\link{plot.strata}}
+#' \code{\link{summary.stratifyR}}, \code{\link{compare_designs}},
+#' \code{\link{plot.stratifyR}}
 #' @examples
 #' 
 #' \donttest{
@@ -289,7 +289,7 @@ strata.data <- function(data,
                data_internal   = data_raw)   # for plot.strata()
 
   result <- c(out1, out2, out3, out4, out5)
-  class(result) <- "strata"
+  class(result) <- c("stratifyR", "strata")
   result
 }
 

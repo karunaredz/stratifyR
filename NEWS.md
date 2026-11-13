@@ -15,6 +15,17 @@
 
 ## Changes
 
+* Results now have class `c("stratifyR", "strata")`, and all methods are
+  registered for `"stratifyR"`. Before, the class was `"strata"`, the same name
+  that the stratification package uses, so whichever package was loaded last
+  took over `print()` and `plot()`, and printing or plotting a result failed
+  when both packages were loaded. Code that tests `inherits(x, "strata")`
+  still works. The summary object now has class `"summary.stratifyR"`. A
+  result saved with an older version can be updated with
+  `class(x) <- c("stratifyR", "strata")`.
+* In the Shiny app, the value shown as "Total variance V*" was Phi^2/n, which
+  leaves out the finite population correction. It is now labelled
+  "Phi^2/n (without fpc)", next to the variance with the correction.
 * `summary()` now returns an object of class `summary.strata` and prints
   nothing itself. Printing it (or calling `summary()` at the console) shows
   the same table as before, and in R Markdown it gives the same styled table.

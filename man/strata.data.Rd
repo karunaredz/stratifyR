@@ -70,7 +70,7 @@ allocation over the other strata. Implies \code{fpc = TRUE}. Default
 \code{FALSE}.}
 }
 \value{
-\code{strata.data} returns an object of class \code{"strata"} with
+\code{strata.data} returns an object of class \code{"stratifyR"} with
 the Optimum Strata Boundaries (OSB; the upper boundary of each stratum, the
 last being the largest data value), stratum weights (Wh), stratum variances
 (Vh), Optimum Sample Sizes (nh), stratum population sizes (Nh) and sampling
@@ -146,8 +146,8 @@ quakes \%>\%
 }
 \seealso{
 \code{\link{strata.distr}}, \code{\link{boundaries}},
-\code{\link{summary.strata}}, \code{\link{compare_designs}},
-\code{\link{plot.strata}}
+\code{\link{summary.stratifyR}}, \code{\link{compare_designs}},
+\code{\link{plot.stratifyR}}
 }
 \author{
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan

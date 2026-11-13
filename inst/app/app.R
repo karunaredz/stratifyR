@@ -3564,7 +3564,7 @@ server <- function(input, output, session) {
           span("Status:"),
           span(class = paste("meta-badge", conv_cls), conv_lbl)),
         div(class = "meta-item",
-          span("Total variance V*:"),
+          span("\u03a6\u00b2/n (without fpc):"),
           span(class = "meta-badge",
             formatC(res$WhShTot^2 / res$nhTot, format = "e", digits = 3)))
       ),
@@ -3850,7 +3850,7 @@ server <- function(input, output, session) {
   output$plot_3d <- renderPlotly({
     req(has_plotly)
     res <- strata_res(); req(res)
-    stratifyR:::plot.strata(res, type    = "3d",
+    stratifyR:::plot.stratifyR(res, type    = "3d",
                                 palette = current_palette(),
                                 main    = plot_main())
   })

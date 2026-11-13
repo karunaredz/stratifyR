@@ -14,7 +14,7 @@
 
 #' Compare survey design efficiencies
 #'
-#' Given a fitted \code{"strata"} object (from \code{\link{strata.data}} or
+#' Given a fitted \code{"stratifyR"} object (from \code{\link{strata.data}} or
 #' \code{\link{strata.distr}}), computes and compares the variance of the
 #' sample mean under three designs for the \strong{same} total sample size
 #' \eqn{n}:
@@ -31,7 +31,7 @@
 #' observations an SRS design would need to match the precision of the Neyman
 #' design, and the \emph{cost saving} is the corresponding percentage reduction.
 #'
-#' @param object An object of class \code{"strata"}.
+#' @param object An object of class \code{"stratifyR"}.
 #' @param n Integer. Total sample size. Defaults to \code{object$nhTot} (the
 #'   value used when the stratification was run).
 #' @param x A \code{"compare_designs"} object.
@@ -73,7 +73,7 @@ compare_designs.default <- function(object, ...) {
 
 #' @rdname compare_designs
 #' @export
-compare_designs.strata <- function(object, n = NULL, ...) {
+compare_designs.stratifyR <- function(object, n = NULL, ...) {
 
   if (is.null(n)) {
     n_total <- object$nhTot

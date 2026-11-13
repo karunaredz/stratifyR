@@ -20,7 +20,7 @@
 #' boundary, the population size \eqn{N_h}, the weight \eqn{W_h = N_h/N}, the
 #' standard deviation \eqn{S_h}, the product \eqn{W_h S_h}, the sample size
 #' \eqn{n_h} and the sampling fraction \eqn{f_h = n_h/N_h}.
-#' \code{as.data.frame()} on a \code{"strata"} object gives the same table.
+#' \code{as.data.frame()} on a \code{"stratifyR"} object gives the same table.
 #'
 #' \code{objective()} returns the value of the objective function
 #' \eqn{\Phi = \sum_h W_h S_h} at the boundaries, the quantity that the
@@ -39,7 +39,7 @@
 #' variance and standard error of the sample mean and the design effect, and
 #' \code{objective()} returns \eqn{\Phi}.
 #'
-#' @param x An object of class \code{"strata"}, or for \code{objective()} and
+#' @param x An object of class \code{"stratifyR"}, or for \code{objective()} and
 #'   \code{as.data.frame()} also of class \code{"compare_designs"}.
 #' @param ends Logical. If \code{TRUE}, add the smallest and largest values
 #'   of the variable to the boundaries. Default \code{FALSE}.
@@ -50,7 +50,7 @@
 #'   \code{allocation()} and \code{as.data.frame()} return data frames, and
 #'   \code{fitted_distribution()} returns a list with components
 #'   \code{distr} and \code{estimate}.
-#' @seealso \code{\link{strata.data}}, \code{\link{summary.strata}},
+#' @seealso \code{\link{strata.data}}, \code{\link{summary.stratifyR}},
 #'   \code{\link{compare_designs}}
 #' @examples
 #' \donttest{
@@ -72,7 +72,7 @@ boundaries <- function(x, ...) UseMethod("boundaries")
 
 #' @rdname accessors
 #' @export
-boundaries.strata <- function(x, ends = FALSE, ...) {
+boundaries.stratifyR <- function(x, ends = FALSE, ...) {
   .check_flag(ends, "ends")
   L   <- nrow(x$h)
   osb <- as.numeric(x$OSB)[seq_len(L)]
@@ -87,7 +87,7 @@ allocation <- function(x, ...) UseMethod("allocation")
 
 #' @rdname accessors
 #' @export
-allocation.strata <- function(x, ...) {
+allocation.stratifyR <- function(x, ...) {
   b <- boundaries(x, ends = TRUE)
   L <- nrow(x$h)
   # unrounded values (stored from 2.1-0); rounded ones for older objects
@@ -107,7 +107,7 @@ allocation.strata <- function(x, ...) {
 
 #' @rdname accessors
 #' @export
-as.data.frame.strata <- function(x, row.names = NULL, optional = FALSE, ...) {
+as.data.frame.stratifyR <- function(x, row.names = NULL, optional = FALSE, ...) {
   allocation(x)
 }
 
@@ -117,7 +117,7 @@ objective <- function(x, ...) UseMethod("objective")
 
 #' @rdname accessors
 #' @export
-objective.strata <- function(x, ...) {
+objective.stratifyR <- function(x, ...) {
   as.numeric(if (!is.null(x$objective_full)) x$objective_full else x$WhShTot)
 }
 
@@ -131,7 +131,7 @@ variance <- function(x, ...) UseMethod("variance")
 
 #' @rdname accessors
 #' @export
-variance.strata <- function(x, ...) {
+variance.stratifyR <- function(x, ...) {
   if (!is.null(x$variance)) return(as.numeric(x$variance))
   a <- allocation(x)
   s <- a$nh > 0 & a$nh < a$Nh
@@ -144,7 +144,7 @@ fitted_distribution <- function(x, ...) UseMethod("fitted_distribution")
 
 #' @rdname accessors
 #' @export
-fitted_distribution.strata <- function(x, ...) {
+fitted_distribution.stratifyR <- function(x, ...) {
   est <- tryCatch(if (!is.null(x$fit$estimate)) x$fit$estimate else x$fit$fit$estimate,
                   error = function(e) NULL)
   list(distr = x$distr, estimate = unlist(est))

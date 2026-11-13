@@ -71,7 +71,7 @@ Default \code{2000L}.}
 \code{strata.distr} returns Optimum Strata Boundaries (OSB), stratum
 weights (Wh), stratum costs (Ch), stratum variances (Vh), Optimum Sample
 Sizes (nh), stratum population sizes (Nh), as an object of class
-\code{"strata"}. Use \code{\link{boundaries}}, \code{\link{allocation}},
+\code{"stratifyR"}. Use \code{\link{boundaries}}, \code{\link{allocation}},
 \code{\link{objective}} and \code{\link{variance}} to get the results.
 }
 \description{
@@ -126,7 +126,7 @@ quakes \%>\%
 }
 \seealso{
 \code{\link{strata.data}}, \code{\link{boundaries}},
-\code{\link{summary.strata}}, \code{\link{compare_designs}}
+\code{\link{summary.stratifyR}}, \code{\link{compare_designs}}
 }
 \author{
 Karuna Reddy <karuna.reddy@auckland.ac.nz>\cr MGM Khan

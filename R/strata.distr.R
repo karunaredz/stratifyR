@@ -56,12 +56,12 @@
 #' @return \code{strata.distr} returns Optimum Strata Boundaries (OSB), stratum
 #' weights (Wh), stratum costs (Ch), stratum variances (Vh), Optimum Sample
 #' Sizes (nh), stratum population sizes (Nh), as an object of class
-#' \code{"strata"}. Use \code{\link{boundaries}}, \code{\link{allocation}},
+#' \code{"stratifyR"}. Use \code{\link{boundaries}}, \code{\link{allocation}},
 #' \code{\link{objective}} and \code{\link{variance}} to get the results.
 #' @author Karuna Reddy <karuna.reddy@@auckland.ac.nz>\cr MGM Khan
 #' <mgm.khan@@usp.ac.fj>
 #' @seealso \code{\link{strata.data}}, \code{\link{boundaries}},
-#' \code{\link{summary.strata}}, \code{\link{compare_designs}}
+#' \code{\link{summary.stratifyR}}, \code{\link{compare_designs}}
 #' @examples
 #' 
 #' \dontrun{
@@ -250,7 +250,7 @@ strata.distr <- function(h,
                data_internal   = NULL)   # no raw data for distr pathway
 
   result <- c(out1, out2, out3, out4, out5)
-  class(result) <- "strata"
+  class(result) <- c("stratifyR", "strata")
   result
 }
 

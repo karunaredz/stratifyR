@@ -10,7 +10,7 @@
 
 #' Summarise a stratification
 #'
-#' Builds a summary of a \code{"strata"} object: the design settings, the
+#' Builds a summary of a \code{"stratifyR"} object: the design settings, the
 #' fitted distribution and a table with one row per stratum and a total row.
 #' \code{summary()} prints nothing itself; the result is printed by its
 #' \code{print()} method (or automatically at the console), and
@@ -21,12 +21,12 @@
 #' the \pkg{crayon} package; set \code{options(stratifyR.color = FALSE)} to
 #' turn this off). In R Markdown, the table is shown as a styled HTML table.
 #'
-#' @param object An object of class \code{"strata"}, from
+#' @param object An object of class \code{"stratifyR"}, from
 #'   \code{\link{strata.data}} or \code{\link{strata.distr}}.
-#' @param x An object of class \code{"summary.strata"}.
+#' @param x An object of class \code{"summary.stratifyR"}.
 #' @param row.names,optional Not used; for compatibility with the generic.
 #' @param ... Not used.
-#' @return \code{summary()} returns an object of class \code{"summary.strata"},
+#' @return \code{summary()} returns an object of class \code{"summary.stratifyR"},
 #'   a list with components:
 #' \describe{
 #'   \item{\code{L}}{Number of strata.}
@@ -55,8 +55,9 @@
 #' s
 #' as.data.frame(s)
 #' }
+#' @rdname summary.strata
 #' @export
-summary.strata <- function(object, ...) {
+summary.stratifyR <- function(object, ...) {
    `%||%` <- function(a, b) if (!is.null(a)) a else b
    h <- nrow(object$h)
    fit <- object$fit
@@ -112,12 +113,12 @@ summary.strata <- function(object, ...) {
       fpc      = isTRUE(object$fpc),
       variance = object$variance,
       table    = rbind(tab2, tab3)),
-      class = "summary.strata")
+      class = "summary.stratifyR")
 }
 
 #' @rdname summary.strata
 #' @export
-as.data.frame.summary.strata <- function(x, row.names = NULL, optional = FALSE, ...) {
+as.data.frame.summary.stratifyR <- function(x, row.names = NULL, optional = FALSE, ...) {
    x$table
 }
 
@@ -204,7 +205,7 @@ as.data.frame.summary.strata <- function(x, row.names = NULL, optional = FALSE, 
 
 #' @rdname summary.strata
 #' @export
-print.summary.strata <- function(x, ...) {
+print.summary.stratifyR <- function(x, ...) {
    hc  <- .sum_has_crayon()
    col <- function(v, role) .sum_col(v, role, hc)
    h <- x$L; N <- x$N
@@ -236,7 +237,7 @@ print.summary.strata <- function(x, ...) {
 }
 
 # R Markdown: a styled HTML table (registered on load when knitr is present).
-knit_print.summary.strata <- function(x, ...) {
+knit_print.summary.stratifyR <- function(x, ...) {
    is_html <- isTRUE(try(knitr::is_html_output(), silent = TRUE))
    h <- x$L; N <- x$N
    rng_txt <- .sum_range_txt(x)

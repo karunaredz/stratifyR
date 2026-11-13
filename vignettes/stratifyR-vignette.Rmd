@@ -319,14 +319,14 @@ This function computes the OSB, OSS, and other important quantities from univari
 The steps below describe the default DP solver. The other solvers replace steps 4 and 5 (see Section 7).
 
 \begin{enumerate}
-	\item **strata.data()** is invoked, which is like the main function which belongs to class "strata" which provides a sequence of codes that lead to the final results. The arguments that need to be specified during the invocation are: data, $h$ (number of strata) and $n$ (fixed total sample size). One can also provide cost and stratum costs if it involves a stratification problem with sampling cost. The function call is normally stored in an object, which is of class "strata".
+	\item **strata.data()** is invoked, which is like the main function which belongs to class "stratifyR" which provides a sequence of codes that lead to the final results. The arguments that need to be specified during the invocation are: data, $h$ (number of strata) and $n$ (fixed total sample size). One can also provide cost and stratum costs if it involves a stratification problem with sampling cost. The function call is normally stored in an object, which is of class "stratifyR".
 	\item It creates a new environment called $my\_env$ and stores the data, $h$ and $n$. Data is also scaled here by dividing with the maximum value of the data. Important quantities like maximum value for real data, initial value, final value and distance (range) for scaled data are stored in $my\_env$.
 	\item The **get.dist()** function takes in data and quantities stored in $my\_env$ as arguments. From a set of ten different distributions (`unif', `Triangular', `right-Triangular', `gamma', `weibull', `norm', `lnorm', `exp', `pareto' and `cauchy'), it chooses the best-fit distribution by looking at the lowest AIC. Parameter estimates for the best-fit distribution together with the smallest AIC are returned as a list.
 	\item When **create.mat()** function is called, it creates a 2D matrices from a set of defined constants to store values of the objective function.
 	\item The **data.optim()** function then computes 3dp and 6dp solutions respectively for different values of the objective function values at different incremental progressions of the $y$ value on the range of the dataset. **data.optim()** has **data.root()** in it to calculate the objective function values which are stored in the 2D-matrices.
    	\item The **data.alloc()** function computes the sample sizes by using Neyman allocation. The OSB obtained in the previous steps are used to calculate the stratum weights and stratum population sizes from the data - these are used to obtain the stratum sample sizes.
-   	\item The **summary.strata()** function defines the method for the "strata" class that has been created 
-in the constructor function strata.data(). The function extracts all individual objects from the "strata" class object and combines them into dataframes before writing the formatted outputs to the console.
+   	\item The **summary()** function defines the method for the "stratifyR" class that has been created 
+in the constructor function strata.data(). The function extracts all individual objects from the "stratifyR" class object and combines them into dataframes before writing the formatted outputs to the console.
 \end{enumerate}
 
 \textbf{Application}
@@ -532,7 +532,7 @@ summary(expend)
 
 ## What is in a result
 
-Every call to `strata.data()` or `strata.distr()` returns an object of class `"strata"`. Printing it gives a short overview, and `summary()` gives the full table. The results are taken out of the object with these functions:
+Every call to `strata.data()` or `strata.distr()` returns an object of class `"stratifyR"`. Printing it gives a short overview, and `summary()` gives the full table. The results are taken out of the object with these functions:
 
 | Function | Returns |
 |---|---|

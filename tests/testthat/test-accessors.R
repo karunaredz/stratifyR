@@ -4,10 +4,10 @@ set.seed(20)
 x <- rlnorm(300, meanlog = 2, sdlog = 0.6)
 res <- suppressMessages(strata.data(x, h = 4, n = 60, method = "exact"))
 
-test_that("summary() returns a summary.strata object and prints nothing", {
+test_that("summary() returns a summary.stratifyR object and prints nothing", {
   out <- utils::capture.output(s <- summary(res))
   expect_length(out, 0L)
-  expect_s3_class(s, "summary.strata")
+  expect_s3_class(s, "summary.stratifyR")
   expect_equal(s$L, 4L)
   tab <- as.data.frame(s)
   expect_s3_class(tab, "data.frame")
@@ -95,4 +95,17 @@ test_that("variance() is the variance of the mean with the fpc", {
   r <- suppressMessages(strata.distr(h = 3, initval = 0.5, dist = 10, distr = "gamma",
                                      params = c(shape = 2, rate = 1), n = 200, N = 5000))
   expect_true(is.finite(variance(r)) && variance(r) > 0)
+})
+
+test_that("results keep their own methods when the stratification package is loaded", {
+  skip_if_not_installed("stratification")
+  x <- c(1:40, 60, 80, 100, 150, 300)
+  res <- suppressMessages(strata.data(x, h = 3, n = 20, method = "exact"))
+  expect_s3_class(res, "stratifyR")
+  expect_true(inherits(res, "strata"))
+  loadNamespace("stratification")
+  expect_output(print(res))
+  f <- tempfile(fileext = ".png"); png(f); on.exit({dev.off(); unlink(f)}, add = TRUE)
+  expect_error(suppressWarnings(plot(res)), NA)
+  expect_s3_class(summary(res), "summary.stratifyR")
 })
